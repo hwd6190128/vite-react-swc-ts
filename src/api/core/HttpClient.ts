@@ -61,9 +61,13 @@ const DEFAULT_HTTP_OPTIONS: HttpClientOptions = {
 /**
  * Additional request options
  */
-export interface RequestOptions extends AxiosRequestConfig {
+export interface RequestOptions {
     /** Error handling options */
     errorHandling?: ErrorHandlingOptions;
+    /** Abort signal for cancellation */
+    signal?: AbortSignal;
+    /** Additional headers for the request */
+    headers?: RawAxiosRequestHeaders | AxiosHeaders | Partial<HeadersDefaults>;
 }
 
 /**
@@ -151,6 +155,9 @@ export const createHttpClient = (options: HttpClientOptions = DEFAULT_HTTP_OPTIO
 
             return await instance.request<T>(config);
         } catch (error) {
+            if (axios.isCancel(error)) {
+                throw new Error('Request cancelled');
+            }
             if ((error as AxiosError).response) {
                 throw error;
             }
@@ -204,6 +211,7 @@ export const createHttpClient = (options: HttpClientOptions = DEFAULT_HTTP_OPTIO
         file: File | FormData,
         options: RequestOptions & {
             onUploadProgress?: (progressEvent: AxiosProgressEvent) => void;
+            headers?: Record<string, string>;
         } = {}
     ) => {
         const formData = file instanceof FormData ? file : new FormData();

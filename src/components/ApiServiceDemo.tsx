@@ -7,36 +7,42 @@ import { User, Post, Comment } from '../api/services';
  * API 服務演示組件
  */
 export const ApiServiceDemo: React.FC = () => {
-    const { data: users, isLoading: isLoadingUsers, error: usersError } = userApi.useGetUsers({ limit: 5 }, {enabled: true});
+    const { data: users, isLoading: isLoadingUsers, error: usersError, refetch: refetchUsers } = userApi.useGetUsers(
+        { limit: 5 },
+        {
+            enabled: false, // 初始不發送請求
+            staleTime: 5 * 60 * 1000 // 5 分鐘內不重新請求
+        }
+    );
     const { data: userData, isLoading: isLoadingUser, error: userError } = userApi.useGetUserById(1);
-    
+
     // 貼文資料
     const [postTitle, setPostTitle] = useState('');
     const [postBody, setPostBody] = useState('');
     const { data: posts, isLoading: isLoadingPosts, error: postsError } = postApi.useGetPosts({ limit: 5 });
     const { data: postDetail, isLoading: isLoadingPost, error: postError } = postApi.useGetPostById(1);
     const { mutate: createPost, isLoading: isCreatingPost, error: createPostError } = postApi.useCreatePost();
-    
+
     // 評論資料
     const { data: comments, isLoading: isLoadingComments, error: commentsError } = commentApi.useGetCommentsByPostId(1);
     const { mutate: addComment, isLoading: isAddingComment, error: addCommentError } = commentApi.useAddComment();
     const [commentName, setCommentName] = useState('');
     const [commentEmail, setCommentEmail] = useState('');
     const [commentBody, setCommentBody] = useState('');
-    
+
     // 文件上傳
     const [file, setFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
-    
+
     const handleProgress = (event: AxiosProgressEvent) => {
         if (event.total) {
             const progress = Math.round((event.loaded * 100) / event.total);
             setUploadProgress(progress);
         }
     };
-    
+
     const { upload, isLoading: isUploading, error: uploadError } = uploadApi.useUploadFile(handleProgress);
-    
+
     // 提交新貼文
     const handleSubmitPost = (e: FormEvent) => {
         e.preventDefault();
@@ -50,7 +56,7 @@ export const ApiServiceDemo: React.FC = () => {
             setPostBody('');
         }
     };
-    
+
     // 提交新評論
     const handleSubmitComment = (e: FormEvent) => {
         e.preventDefault();
@@ -66,7 +72,7 @@ export const ApiServiceDemo: React.FC = () => {
             setCommentBody('');
         }
     };
-    
+
     // 處理文件選擇
     const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -74,18 +80,23 @@ export const ApiServiceDemo: React.FC = () => {
             setUploadProgress(0);
         }
     };
-    
+
     // 上傳文件
     const handleUpload = () => {
         if (file) {
             upload(file);
         }
     };
-    
+
+    // 添加一個按鈕來觸發請求
+    const handleFetchUsers = () => {
+        refetchUsers(); // 這會發送請求，並且如果之前的請求還在進行中，會自動取消
+    };
+
     return (
         <div className="api-demo">
             <h2>集中式 API 服務演示</h2>
-            
+
             {/* 錯誤顯示 */}
             {(usersError || userError || postsError || postError || createPostError || commentsError || addCommentError || uploadError) && (
                 <div className="error-section">
@@ -100,15 +111,19 @@ export const ApiServiceDemo: React.FC = () => {
                     {uploadError && <p>上傳文件失敗: {uploadError.message}</p>}
                 </div>
             )}
-            
+
             {/* 使用者資料展示 */}
             <section className="section">
                 <h3>使用者資料</h3>
+
+                <button onClick={handleFetchUsers} disabled={isLoadingUsers}>
+                    {isLoadingUsers ? '載入中...' : '載入使用者列表'}
+                </button>
                 
                 {isLoadingUsers ? (
                     <p>載入使用者列表中...</p>
                 ) : usersError ? (
-                    <p>無法載入使用者列表</p>
+                    <p>無法載入使用者列表: {usersError.message}</p>
                 ) : (
                     <div className="data-section">
                         <h4>使用者列表</h4>

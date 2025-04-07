@@ -76,12 +76,13 @@ export const useGet = <TData>(
     // Use React Query's useQuery
     const query = useQuery({
         queryKey,
-        queryFn: async () => {
+        queryFn: async ({ signal }) => {
             return await httpClient.get<TData>(url, params, {
-                errorHandling
+                errorHandling,
+                signal
             });
         },
-        enabled,
+        enabled: enabled !== false,
         staleTime: staleTime || 0,
         gcTime: staleTime || 0,
         refetchOnWindowFocus,
@@ -126,7 +127,7 @@ export const usePost = <TData, TVariables = Record<string, unknown>>(
         onSuccess: (data) => {
             // Call custom onSuccess
             onSuccess?.(data);
-            
+
             // Invalidate queries if needed
             if (invalidateQueriesOnSuccess && queryClient) {
                 if (typeof invalidateQueriesOnSuccess === 'string') {
@@ -144,7 +145,7 @@ export const usePost = <TData, TVariables = Record<string, unknown>>(
         }
     });
 
-    // Simplify API to return data directly 
+    // Simplify API to return data directly
     return {
         mutate: (variables: TVariables) => mutation.mutate(variables),
         mutateAsync: async (variables: TVariables): Promise<TData> => {
@@ -184,7 +185,7 @@ export const usePut = <TData, TVariables = Record<string, unknown>>(
         },
         onSuccess: (data) => {
             onSuccess?.(data);
-            
+
             if (invalidateQueriesOnSuccess && queryClient) {
                 if (typeof invalidateQueriesOnSuccess === 'string') {
                     void queryClient.invalidateQueries({ queryKey: [invalidateQueriesOnSuccess] });
@@ -204,12 +205,12 @@ export const usePut = <TData, TVariables = Record<string, unknown>>(
         mutate: (variables: TVariables) => {
             return mutation.mutate(variables);
         },
-        
+
         mutateAsync: async (variables: TVariables): Promise<TData> => {
             const response = await mutation.mutateAsync(variables);
             return response.data;
         },
-        
+
         isLoading: mutation.isPending,
         isError: mutation.isError,
         error: mutation.error as Error | null,
@@ -243,7 +244,7 @@ export const useDelete = <TData, TVariables = Record<string, unknown>>(
         },
         onSuccess: (data) => {
             onSuccess?.(data);
-            
+
             if (invalidateQueriesOnSuccess && queryClient) {
                 if (typeof invalidateQueriesOnSuccess === 'string') {
                     void queryClient.invalidateQueries({ queryKey: [invalidateQueriesOnSuccess] });
@@ -263,12 +264,12 @@ export const useDelete = <TData, TVariables = Record<string, unknown>>(
         mutate: (variables?: TVariables) => {
             return mutation.mutate(variables);
         },
-        
+
         mutateAsync: async (variables?: TVariables): Promise<TData> => {
             const response = await mutation.mutateAsync(variables);
             return response.data;
         },
-        
+
         isLoading: mutation.isPending,
         isError: mutation.isError,
         error: mutation.error as Error | null,
@@ -295,12 +296,12 @@ export const useFileUpload = <TData>(
 ) => {
     // Merge default options with user options
     const mergedOptions = { ...defaultOptions, ...options };
-    const { 
-        errorHandling, 
-        invalidateQueriesOnSuccess, 
-        onSuccess, 
+    const {
+        errorHandling,
+        invalidateQueriesOnSuccess,
+        onSuccess,
         onError,
-        onProgress 
+        onProgress
     } = mergedOptions;
 
     // Use React Query's useMutation
@@ -313,7 +314,7 @@ export const useFileUpload = <TData>(
         },
         onSuccess: (data) => {
             onSuccess?.(data);
-            
+
             if (invalidateQueriesOnSuccess && queryClient) {
                 if (typeof invalidateQueriesOnSuccess === 'string') {
                     void queryClient.invalidateQueries({ queryKey: [invalidateQueriesOnSuccess] });

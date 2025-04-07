@@ -1,8 +1,25 @@
 import { useCallback } from 'react';
 import { QueryClient, useQuery, useMutation } from '@tanstack/react-query';
-import httpClient, { ErrorHandlingOptions } from '../core/HttpClient';
-import { globalQueryOptions, GlobalQueryOptions } from '../core/ApiProvider';
+import { ErrorHandlingOptions, httpClient } from '../core/HttpClient';
 import { AxiosProgressEvent, AxiosResponse } from 'axios';
+
+/**
+ * Global query options that can be shared across all hooks
+ */
+export interface GlobalQueryOptions {
+    /** Time in milliseconds after which the data is considered stale */
+    staleTime?: number;
+    /** Whether to refetch on window focus */
+    refetchOnWindowFocus?: boolean;
+    /** Whether to refetch on mount */
+    refetchOnMount?: boolean;
+    /** Whether to refetch on reconnect */
+    refetchOnReconnect?: boolean;
+    /** Number of retries on failure */
+    retry?: number;
+    /** Whether to enable the query */
+    enabled?: boolean;
+}
 
 /**
  * Common options for all query hooks
@@ -18,9 +35,14 @@ export interface QueryHookOptions extends GlobalQueryOptions {
     onError?: (error: Error) => void;
 }
 
-// Use global options as defaults
-const defaultOptions: QueryHookOptions = {
-    ...globalQueryOptions
+// Default query options
+export const defaultOptions: QueryHookOptions = {
+    staleTime: 0, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 0,
+    enabled: true
 };
 
 /**
@@ -29,11 +51,11 @@ const defaultOptions: QueryHookOptions = {
  * @param params - Query parameters
  * @param options - Query options
  */
-export function useGet<TData>(
+export const useGet = <TData>(
     url: string,
     params?: Record<string, unknown>,
     options: QueryHookOptions = {}
-) {
+) => {
     // Merge default options with user options
     const mergedOptions = { ...defaultOptions, ...options };
     const {
@@ -42,6 +64,7 @@ export function useGet<TData>(
         refetchOnMount,
         refetchOnReconnect,
         retry,
+        enabled,
         errorHandling,
         onSuccess,
         onError
@@ -58,6 +81,7 @@ export function useGet<TData>(
                 errorHandling
             });
         },
+        enabled,
         staleTime: staleTime || 0,
         gcTime: staleTime || 0,
         refetchOnWindowFocus,
@@ -76,18 +100,8 @@ export function useGet<TData>(
         onError(query.error as unknown as Error);
     }
 
-    return {
-        // Return data directly from AxiosResponse
-        data: query.data?.data as TData | undefined,
-        isLoading: query.isLoading,
-        isError: query.isError,
-        error: query.error as Error | null,
-        isSuccess: query.isSuccess,
-        refetch: query.refetch,
-        // Return the full response for when it's needed
-        response: query.data
-    };
-}
+    return query;
+};
 
 /**
  * Hook for POST requests
@@ -95,11 +109,11 @@ export function useGet<TData>(
  * @param options - Mutation options
  * @param queryClient - Optional QueryClient for cache invalidation
  */
-export function usePost<TData, TVariables = Record<string, unknown>>(
+export const usePost = <TData, TVariables = Record<string, unknown>>(
     url: string,
     options: QueryHookOptions = {},
     queryClient?: QueryClient
-) {
+) => {
     // Merge default options with user options
     const mergedOptions = { ...defaultOptions, ...options };
     const { errorHandling, invalidateQueriesOnSuccess, onSuccess, onError } = mergedOptions;
@@ -146,7 +160,7 @@ export function usePost<TData, TVariables = Record<string, unknown>>(
         // Return the full response for when it's needed
         response: mutation.data
     };
-}
+};
 
 /**
  * Hook for PUT requests
@@ -154,11 +168,11 @@ export function usePost<TData, TVariables = Record<string, unknown>>(
  * @param options - Mutation options
  * @param queryClient - Optional QueryClient for cache invalidation
  */
-export function usePut<TData, TVariables = Record<string, unknown>>(
+export const usePut = <TData, TVariables = Record<string, unknown>>(
     url: string,
     options: QueryHookOptions = {},
     queryClient?: QueryClient
-) {
+) => {
     // Merge default options with user options
     const mergedOptions = { ...defaultOptions, ...options };
     const { errorHandling, invalidateQueriesOnSuccess, onSuccess, onError } = mergedOptions;
@@ -205,7 +219,7 @@ export function usePut<TData, TVariables = Record<string, unknown>>(
         // Return the full response for when it's needed
         response: mutation.data
     };
-}
+};
 
 /**
  * Hook for DELETE requests
@@ -213,11 +227,11 @@ export function usePut<TData, TVariables = Record<string, unknown>>(
  * @param options - Mutation options
  * @param queryClient - Optional QueryClient for cache invalidation
  */
-export function useDelete<TData, TVariables = Record<string, unknown>>(
+export const useDelete = <TData, TVariables = Record<string, unknown>>(
     url: string,
     options: QueryHookOptions = {},
     queryClient?: QueryClient
-) {
+) => {
     // Merge default options with user options
     const mergedOptions = { ...defaultOptions, ...options };
     const { errorHandling, invalidateQueriesOnSuccess, onSuccess, onError } = mergedOptions;
@@ -264,7 +278,7 @@ export function useDelete<TData, TVariables = Record<string, unknown>>(
         // Return the full response for when it's needed
         response: mutation.data
     };
-}
+};
 
 /**
  * Hook for file uploads
@@ -272,13 +286,13 @@ export function useDelete<TData, TVariables = Record<string, unknown>>(
  * @param options - Upload options
  * @param queryClient - Optional QueryClient for cache invalidation
  */
-export function useFileUpload<TData>(
+export const useFileUpload = <TData>(
     url: string,
     options: QueryHookOptions & {
         onProgress?: (progressEvent: AxiosProgressEvent) => void;
     } = {},
     queryClient?: QueryClient
-) {
+) => {
     // Merge default options with user options
     const mergedOptions = { ...defaultOptions, ...options };
     const { 
@@ -337,7 +351,7 @@ export function useFileUpload<TData>(
         // Return the full response for when it's needed
         response: mutation.data
     };
-}
+};
 
 /**
  * Collection of query hooks

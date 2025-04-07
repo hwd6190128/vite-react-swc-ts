@@ -1,25 +1,25 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { userApi, postApi, commentApi, uploadApi } from '../api/services';
 import { AxiosProgressEvent } from 'axios';
+import { User, Post, Comment } from '../api/services';
 
 /**
  * API 服務演示組件
  */
 export const ApiServiceDemo: React.FC = () => {
-    // 使用者資料
-    const { data: users, isLoading: isLoadingUsers } = userApi.useGetUsers({ limit: 5 });
-    const { data: userData, isLoading: isLoadingUser } = userApi.useGetUserById(1);
+    const { data: users, isLoading: isLoadingUsers, error: usersError } = userApi.useGetUsers({ limit: 5 }, {enabled: true});
+    const { data: userData, isLoading: isLoadingUser, error: userError } = userApi.useGetUserById(1);
     
     // 貼文資料
     const [postTitle, setPostTitle] = useState('');
     const [postBody, setPostBody] = useState('');
-    const { data: posts, isLoading: isLoadingPosts } = postApi.useGetPosts({ limit: 5 });
-    const { data: postDetail, isLoading: isLoadingPost } = postApi.useGetPostById(1);
-    const { mutate: createPost, isLoading: isCreatingPost } = postApi.useCreatePost();
+    const { data: posts, isLoading: isLoadingPosts, error: postsError } = postApi.useGetPosts({ limit: 5 });
+    const { data: postDetail, isLoading: isLoadingPost, error: postError } = postApi.useGetPostById(1);
+    const { mutate: createPost, isLoading: isCreatingPost, error: createPostError } = postApi.useCreatePost();
     
     // 評論資料
-    const { data: comments, isLoading: isLoadingComments } = commentApi.useGetCommentsByPostId(1);
-    const { mutate: addComment, isLoading: isAddingComment } = commentApi.useAddComment();
+    const { data: comments, isLoading: isLoadingComments, error: commentsError } = commentApi.useGetCommentsByPostId(1);
+    const { mutate: addComment, isLoading: isAddingComment, error: addCommentError } = commentApi.useAddComment();
     const [commentName, setCommentName] = useState('');
     const [commentEmail, setCommentEmail] = useState('');
     const [commentBody, setCommentBody] = useState('');
@@ -35,7 +35,7 @@ export const ApiServiceDemo: React.FC = () => {
         }
     };
     
-    const { upload, isLoading: isUploading } = uploadApi.useUploadFile(handleProgress);
+    const { upload, isLoading: isUploading, error: uploadError } = uploadApi.useUploadFile(handleProgress);
     
     // 提交新貼文
     const handleSubmitPost = (e: FormEvent) => {
@@ -86,17 +86,34 @@ export const ApiServiceDemo: React.FC = () => {
         <div className="api-demo">
             <h2>集中式 API 服務演示</h2>
             
+            {/* 錯誤顯示 */}
+            {(usersError || userError || postsError || postError || createPostError || commentsError || addCommentError || uploadError) && (
+                <div className="error-section">
+                    <h3>錯誤信息</h3>
+                    {usersError && <p>載入使用者列表失敗: {usersError.message}</p>}
+                    {userError && <p>載入使用者詳情失敗: {userError.message}</p>}
+                    {postsError && <p>載入貼文列表失敗: {postsError.message}</p>}
+                    {postError && <p>載入貼文詳情失敗: {postError.message}</p>}
+                    {createPostError && <p>創建貼文失敗: {createPostError.message}</p>}
+                    {commentsError && <p>載入評論失敗: {commentsError.message}</p>}
+                    {addCommentError && <p>添加評論失敗: {addCommentError.message}</p>}
+                    {uploadError && <p>上傳文件失敗: {uploadError.message}</p>}
+                </div>
+            )}
+            
             {/* 使用者資料展示 */}
             <section className="section">
                 <h3>使用者資料</h3>
                 
                 {isLoadingUsers ? (
                     <p>載入使用者列表中...</p>
+                ) : usersError ? (
+                    <p>無法載入使用者列表</p>
                 ) : (
                     <div className="data-section">
                         <h4>使用者列表</h4>
                         <ul className="item-list">
-                            {users?.map(user => (
+                            {users?.data?.map((user: User) => (
                                 <li key={user.id} className="item">
                                     <strong>{user.name}</strong> - {user.email}
                                 </li>
@@ -107,15 +124,17 @@ export const ApiServiceDemo: React.FC = () => {
                 
                 {isLoadingUser ? (
                     <p>載入使用者詳情中...</p>
-                ) : userData && (
+                ) : userError ? (
+                    <p>無法載入使用者詳情</p>
+                ) : userData?.data && (
                     <div className="data-section">
                         <h4>使用者詳情</h4>
                         <div className="detail-card">
-                            <p><strong>名稱:</strong> {userData.name}</p>
-                            <p><strong>信箱:</strong> {userData.email}</p>
-                            <p><strong>電話:</strong> {userData.phone}</p>
-                            <p><strong>網站:</strong> {userData.website}</p>
-                            <p><strong>公司:</strong> {userData.company.name}</p>
+                            <p><strong>名稱:</strong> {userData.data.name}</p>
+                            <p><strong>信箱:</strong> {userData.data.email}</p>
+                            <p><strong>電話:</strong> {userData.data.phone}</p>
+                            <p><strong>網站:</strong> {userData.data.website}</p>
+                            <p><strong>公司:</strong> {userData.data.company.name}</p>
                         </div>
                     </div>
                 )}
@@ -160,11 +179,13 @@ export const ApiServiceDemo: React.FC = () => {
                 
                 {isLoadingPosts ? (
                     <p>載入貼文列表中...</p>
+                ) : postsError ? (
+                    <p>無法載入貼文列表</p>
                 ) : (
                     <div className="data-section">
                         <h4>貼文列表</h4>
                         <ul className="item-list">
-                            {posts?.map(post => (
+                            {posts?.data?.map((post: Post) => (
                                 <li key={post.id} className="item">
                                     <strong>{post.title}</strong>
                                     <p>{post.body.substring(0, 100)}...</p>
@@ -176,12 +197,14 @@ export const ApiServiceDemo: React.FC = () => {
                 
                 {isLoadingPost ? (
                     <p>載入貼文詳情中...</p>
-                ) : postDetail && (
+                ) : postError ? (
+                    <p>無法載入貼文詳情</p>
+                ) : postDetail?.data && (
                     <div className="data-section">
                         <h4>貼文詳情</h4>
                         <div className="detail-card">
-                            <h5>{postDetail.title}</h5>
-                            <p>{postDetail.body}</p>
+                            <h5>{postDetail.data.title}</h5>
+                            <p>{postDetail.data.body}</p>
                         </div>
                     </div>
                 )}
@@ -237,11 +260,13 @@ export const ApiServiceDemo: React.FC = () => {
                 
                 {isLoadingComments ? (
                     <p>載入評論中...</p>
+                ) : commentsError ? (
+                    <p>無法載入評論</p>
                 ) : (
                     <div className="data-section">
                         <h4>貼文評論</h4>
                         <ul className="item-list">
-                            {comments?.map(comment => (
+                            {comments?.data?.map((comment: Comment) => (
                                 <li key={comment.id} className="item">
                                     <strong>{comment.name}</strong> ({comment.email})
                                     <p>{comment.body}</p>

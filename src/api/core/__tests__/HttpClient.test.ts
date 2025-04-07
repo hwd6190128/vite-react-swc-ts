@@ -1,37 +1,27 @@
-import { HttpClient, HttpMethod, RequestOptions } from '../HttpClient';
+import axios from 'axios';
+import { createHttpClient, ErrorHandlingOptions } from '../HttpClient';
+import { setupErrorInterceptor } from '../../interceptors/ErrorHandler';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { AxiosInstance, AxiosResponse } from 'axios';
-
-interface HttpClientTestAccess {
-  instance: AxiosInstance;
-}
 
 // Mock axios
-vi.mock('axios', () => {
-  return {
-    default: {
-      create: vi.fn(() => ({
-        defaults: {
-          baseURL: '',
-          timeout: 0,
-          headers: { common: {} },
-          withCredentials: false
-        },
-        interceptors: {
-          request: { use: vi.fn() },
-          response: { use: vi.fn() }
-        },
-        get: vi.fn(),
-        post: vi.fn(),
-        put: vi.fn(),
-        delete: vi.fn(),
-        patch: vi.fn(),
-        request: vi.fn()
-      })),
-      isAxiosError: vi.fn()
+vi.mock('axios');
+const mockAxiosInstance = {
+  defaults: {
+    baseURL: '',
+    timeout: 30000,
+    headers: {
+      common: {} as Record<string, string>
+    },
+    withCredentials: false
+  },
+  request: vi.fn(),
+  post: vi.fn(),
+  interceptors: {
+    response: {
+      use: vi.fn()
     }
-  };
-});
+  }
+};
 
 // Mock ErrorHandler
 vi.mock('../../interceptors/ErrorHandler', () => ({
@@ -39,208 +29,245 @@ vi.mock('../../interceptors/ErrorHandler', () => ({
 }));
 
 describe('HttpClient', () => {
-  // Since HttpClient is a singleton instance, we test it directly
-  let mockAxiosInstance: AxiosInstance;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    mockAxiosInstance = (HttpClient as unknown as HttpClientTestAccess).instance;
+    (axios.create as ReturnType<typeof vi.fn>).mockReturnValue(mockAxiosInstance);
   });
 
   describe('Configuration methods', () => {
-    test('setBaseUrl should correctly set the base URL', () => {
-      const baseUrl = 'https://api.example.com';
-      HttpClient.setBaseUrl(baseUrl);
-      expect(mockAxiosInstance.defaults.baseURL).toBe(baseUrl);
+    test('should set base URL', () => {
+      const client = createHttpClient();
+      client.setBaseUrl('https://api.example.com');
+      expect(mockAxiosInstance.defaults.baseURL).toBe('https://api.example.com');
     });
 
-    test('setTimeout should correctly set the timeout', () => {
-      const timeout = 5000;
-      HttpClient.setTimeout(timeout);
-      expect(mockAxiosInstance.defaults.timeout).toBe(timeout);
+    test('should set timeout', () => {
+      const client = createHttpClient();
+      client.setTimeout(5000);
+      expect(mockAxiosInstance.defaults.timeout).toBe(5000);
     });
 
-    test('setHeader should correctly set request headers', () => {
-      HttpClient.setHeader('Content-Type', 'application/json');
-      expect(mockAxiosInstance.defaults.headers.common['Content-Type']).toBe('application/json');
+    test('should set header', () => {
+      const client = createHttpClient();
+      client.setHeader('Authorization', 'Bearer token');
+      expect(mockAxiosInstance.defaults.headers.common['Authorization']).toBe('Bearer token');
     });
 
-    test('setWithCredentials should correctly set the credentials option', () => {
-      HttpClient.setWithCredentials(true);
+    test('should set withCredentials', () => {
+      const client = createHttpClient();
+      client.setWithCredentials(true);
       expect(mockAxiosInstance.defaults.withCredentials).toBe(true);
+    });
+
+    test('should set default error handling', () => {
+      const client = createHttpClient();
+      const errorHandling: ErrorHandlingOptions = {
+        showCommonErrorDialog: false,
+        propagateError: 'ignore'
+      };
+      client.setDefaultErrorHandling(errorHandling);
+      // 由於 errorHandling 是內部狀態，我們通過實際請求來驗證
+      const mockResponse = { data: 'test' };
+      mockAxiosInstance.request.mockResolvedValue(mockResponse);
+      return client.get('/test').then(() => {
+        expect(mockAxiosInstance.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            errorHandling
+          })
+        );
+      });
     });
   });
 
   describe('HTTP methods', () => {
-    const url = '/test';
-    const data = { key: 'value' };
-    const options: RequestOptions = { headers: { 'X-Test': 'test' } };
+    test('should make GET request', async () => {
+      const client = createHttpClient();
+      const mockResponse = { data: 'test' };
+      mockAxiosInstance.request.mockResolvedValue(mockResponse);
 
-    test('get method should correctly call axios request', async () => {
-      (mockAxiosInstance.request as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ 
-        data: 'response',
-        status: 200,
-        statusText: 'OK',
-        headers: {}
-      } as AxiosResponse);
-      
-      const response = await HttpClient.get(url, data, options);
-      
-      expect(mockAxiosInstance.request).toHaveBeenCalledWith(expect.objectContaining({
-        method: HttpMethod.GET,
-        url,
-        params: data
-      }));
-      expect(response.data).toBe('response');
+      const response = await client.get('/test', { param: 'value' });
+      expect(response).toBe(mockResponse);
+      expect(mockAxiosInstance.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'get',
+          url: '/test',
+          params: { param: 'value' }
+        })
+      );
     });
 
-    test('post method should correctly call axios request', async () => {
-      (mockAxiosInstance.request as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ 
-        data: 'response',
-        status: 201,
-        statusText: 'Created',
-        headers: {}
-      } as AxiosResponse);
-      
-      const response = await HttpClient.post(url, data, options);
-      
-      expect(mockAxiosInstance.request).toHaveBeenCalledWith(expect.objectContaining({
-        method: HttpMethod.POST,
-        url,
-        data
-      }));
-      expect(response.data).toBe('response');
+    test('should make POST request', async () => {
+      const client = createHttpClient();
+      const mockResponse = { data: 'test' };
+      mockAxiosInstance.request.mockResolvedValue(mockResponse);
+
+      const response = await client.post('/test', { data: 'value' });
+      expect(response).toBe(mockResponse);
+      expect(mockAxiosInstance.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'post',
+          url: '/test',
+          data: { data: 'value' }
+        })
+      );
     });
 
-    test('put method should correctly call axios request', async () => {
-      (mockAxiosInstance.request as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ 
-        data: 'response',
-        status: 200,
-        statusText: 'OK',
-        headers: {}
-      } as AxiosResponse);
-      
-      const response = await HttpClient.put(url, data, options);
-      
-      expect(mockAxiosInstance.request).toHaveBeenCalledWith(expect.objectContaining({
-        method: HttpMethod.PUT,
-        url,
-        data
-      }));
-      expect(response.data).toBe('response');
+    test('should make PUT request', async () => {
+      const client = createHttpClient();
+      const mockResponse = { data: 'test' };
+      mockAxiosInstance.request.mockResolvedValue(mockResponse);
+
+      const response = await client.put('/test', { data: 'value' });
+      expect(response).toBe(mockResponse);
+      expect(mockAxiosInstance.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'put',
+          url: '/test',
+          data: { data: 'value' }
+        })
+      );
     });
 
-    test('delete method should correctly call axios request', async () => {
-      (mockAxiosInstance.request as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ 
-        data: 'response',
-        status: 204,
-        statusText: 'No Content',
-        headers: {}
-      } as AxiosResponse);
-      
-      const response = await HttpClient.delete(url, data, options);
-      
-      expect(mockAxiosInstance.request).toHaveBeenCalledWith(expect.objectContaining({
-        method: HttpMethod.DELETE,
-        url,
-        data
-      }));
-      expect(response.data).toBe('response');
+    test('should make DELETE request', async () => {
+      const client = createHttpClient();
+      const mockResponse = { data: 'test' };
+      mockAxiosInstance.request.mockResolvedValue(mockResponse);
+
+      const response = await client.delete('/test', { data: 'value' });
+      expect(response).toBe(mockResponse);
+      expect(mockAxiosInstance.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'delete',
+          url: '/test',
+          data: { data: 'value' }
+        })
+      );
     });
 
-    test('patch method should correctly call axios request', async () => {
-      (mockAxiosInstance.request as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ 
-        data: 'response',
-        status: 200,
-        statusText: 'OK',
-        headers: {}
-      } as AxiosResponse);
-      
-      const response = await HttpClient.patch(url, data, options);
-      
-      expect(mockAxiosInstance.request).toHaveBeenCalledWith(expect.objectContaining({
-        method: HttpMethod.PATCH,
-        url,
-        data
-      }));
-      expect(response.data).toBe('response');
+    test('should make PATCH request', async () => {
+      const client = createHttpClient();
+      const mockResponse = { data: 'test' };
+      mockAxiosInstance.request.mockResolvedValue(mockResponse);
+
+      const response = await client.patch('/test', { data: 'value' });
+      expect(response).toBe(mockResponse);
+      expect(mockAxiosInstance.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'patch',
+          url: '/test',
+          data: { data: 'value' }
+        })
+      );
     });
   });
 
-  describe('uploadFile method', () => {
-    test('should correctly handle File object upload', async () => {
-      const file = new File(['test'], 'test.txt', { type: 'text/plain' });
-      const url = '/upload';
-      const onUploadProgress = vi.fn();
-      
-      (mockAxiosInstance.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ 
-        data: 'upload-response',
-        status: 200,
-        statusText: 'OK',
-        headers: {}
-      } as AxiosResponse);
-      
-      const response = await HttpClient.uploadFile(url, file, { onUploadProgress });
-      
-      expect(mockAxiosInstance.post).toHaveBeenCalled();
-      const callArgs = (mockAxiosInstance.post as ReturnType<typeof vi.fn>).mock.calls[0];
-      
-      // Check if URL is correct
-      expect(callArgs[0]).toBe(url);
-      
-      // Check if FormData contains the file
-      expect(callArgs[1] instanceof FormData).toBe(true);
-      
-      // Check if options include onUploadProgress
-      expect(callArgs[2]).toHaveProperty('onUploadProgress');
-      
-      // Check the response
-      expect(response.data).toBe('upload-response');
+  describe('File upload', () => {
+    test('should upload file using FormData', async () => {
+      const client = createHttpClient();
+      const mockFile = new File(['test'], 'test.txt');
+      const mockResponse = { data: 'test' };
+      mockAxiosInstance.post.mockResolvedValue(mockResponse);
+
+      const response = await client.uploadFile('/upload', mockFile);
+      expect(response).toBe(mockResponse);
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/upload',
+        expect.any(FormData),
+        expect.objectContaining({
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+      );
     });
 
-    test('should correctly handle FormData object upload', async () => {
-      const formData = new FormData();
-      formData.append('file', new File(['test'], 'test.txt'));
-      formData.append('name', 'test-file');
-      
-      const url = '/upload-form';
-      
-      (mockAxiosInstance.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ 
-        data: 'formdata-response',
-        status: 200,
-        statusText: 'OK',
-        headers: {}
-      } as AxiosResponse);
-      
-      const response = await HttpClient.uploadFile(url, formData);
-      
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith(url, formData, expect.any(Object));
-      expect(response.data).toBe('formdata-response');
+    test('should upload existing FormData', async () => {
+      const client = createHttpClient();
+      const mockFormData = new FormData();
+      mockFormData.append('file', new File(['test'], 'test.txt'));
+      const mockResponse = { data: 'test' };
+      mockAxiosInstance.post.mockResolvedValue(mockResponse);
+
+      const response = await client.uploadFile('/upload', mockFormData);
+      expect(response).toBe(mockResponse);
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/upload',
+        mockFormData,
+        expect.objectContaining({
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+      );
     });
   });
 
   describe('Error handling', () => {
-    test('should pass error handling options to request', async () => {
-      const url = '/test-error';
-      const options: RequestOptions = {
-        errorHandling: {
-          showCommonErrorDialog: false,
-          propagateError: 'resolve'
+    test('should handle network errors', async () => {
+      const client = createHttpClient();
+      const networkError = new Error('Network error');
+      mockAxiosInstance.request.mockRejectedValue(networkError);
+
+      await expect(client.get('/test')).rejects.toThrow('Request failed: Network error');
+    });
+
+    test('should propagate axios errors', async () => {
+      const client = createHttpClient();
+      const axiosError = {
+        response: {
+          status: 404,
+          data: { message: 'Not found' }
         }
       };
+      mockAxiosInstance.request.mockRejectedValue(axiosError);
+
+      await expect(client.get('/test')).rejects.toEqual(axiosError);
+    });
+  });
+
+  describe('Default instance', () => {
+    test('should create default instance with correct configuration', () => {
+      // 重置 mock
+      vi.clearAllMocks();
+      (axios.create as ReturnType<typeof vi.fn>).mockReturnValue({
+        ...mockAxiosInstance,
+        defaults: {
+          ...mockAxiosInstance.defaults,
+          timeout: 30000
+        }
+      });
       
-      (mockAxiosInstance.request as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ 
-        data: 'response',
-        status: 200,
-        statusText: 'OK',
-        headers: {}
-      } as AxiosResponse);
+      // 創建默認實例
+      const client = createHttpClient();
       
-      await HttpClient.get(url, {}, options);
+      // 驗證配置
+      expect(client.instance.defaults.timeout).toBe(30000);
+      expect(setupErrorInterceptor).toHaveBeenCalledWith(client.instance);
+    });
+
+    test('should use default instance for requests', async () => {
+      // 重置 mock
+      vi.clearAllMocks();
+      const defaultMockInstance = {
+        ...mockAxiosInstance,
+        defaults: {
+          ...mockAxiosInstance.defaults,
+          timeout: 30000
+        }
+      };
+      (axios.create as ReturnType<typeof vi.fn>).mockReturnValue(defaultMockInstance);
       
-      expect(mockAxiosInstance.request).toHaveBeenCalledWith(expect.objectContaining({
-        errorHandling: options.errorHandling
-      }));
+      const mockResponse = { data: 'test' };
+      defaultMockInstance.request.mockResolvedValue(mockResponse);
+
+      const response = await createHttpClient().get('/test');
+      expect(response).toBe(mockResponse);
+      expect(defaultMockInstance.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'get',
+          url: '/test'
+        })
+      );
     });
   });
 }); 

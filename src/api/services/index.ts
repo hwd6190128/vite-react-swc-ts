@@ -1,5 +1,5 @@
-import { useGet, usePost, usePut, useDelete, useFileUpload } from '../hooks/QueryHooks';
-import { AxiosProgressEvent } from 'axios';
+import {useGet, usePost, usePut, useDelete, useFileUpload, QueryHookOptions} from '../hooks/QueryHooks';
+import {AxiosProgressEvent, options} from 'axios';
 import {useQueryClient} from "@tanstack/react-query";
 
 // API base path
@@ -66,8 +66,8 @@ export interface CreateCommentData {
 // User API
 export const userApi = {
   // Get user list
-  useGetUsers: (params?: { limit?: number }) => {
-    return useGet<User[]>(`${API_BASE}/users`, params);
+  useGetUsers: (params?: { limit?: number }, options?: QueryHookOptions) => {
+    return useGet<User[]>(`${API_BASE}/users`, params, options);
   },
   
   // Get single user
@@ -151,7 +151,7 @@ export const uploadApi = {
   useUploadFile: (onProgress?: (progressEvent: AxiosProgressEvent) => void) => {
     const queryClient = useQueryClient();
     return useFileUpload<{ url: string }>(
-      `${API_BASE}/upload`,
+      'https://httpbin.org/post', // 使用 httpbin 作為測試 API
       {
         onProgress,
         onSuccess: (response) => {

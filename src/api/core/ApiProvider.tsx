@@ -2,59 +2,31 @@ import React from 'react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
 
-/**
- * Global API options for React Query
- */
-export interface GlobalQueryOptions {
-    /** Cache time in milliseconds */
-    staleTime?: number;
-    /** Auto-refetch behavior */
-    refetchOnWindowFocus?: boolean;
-    refetchOnMount?: boolean;
-    refetchOnReconnect?: boolean;
-    /** Auto-retry behavior */
-    retry?: boolean | number;
-}
-
-/**
- * Default global query options
- */
-export const globalQueryOptions: GlobalQueryOptions = {
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: true,
-    refetchOnReconnect: true,
-    retry: false
+// Default query options
+const defaultQueryOptions = {
+    defaultOptions: {
+        queries: {
+            staleTime: 5 * 60 * 1000, // 5 分鐘
+            refetchOnWindowFocus: false,
+            refetchOnMount: false,
+            refetchOnReconnect: false,
+            retry: 1
+        }
+    }
 };
 
-/**
- * API Provider component
- *
- * Configures both HTTP client and React Query
- */
-export const ApiProvider = ({
-                                children,
-                            }) => {
+interface ApiProviderProps {
+    children: React.ReactNode;
+}
 
-    // Use provided QueryClient or create a new one
-    const queryClient = new QueryClient({
-        defaultOptions: {
-            queries: {
-                staleTime: globalQueryOptions.staleTime,
-                refetchOnWindowFocus: globalQueryOptions.refetchOnWindowFocus,
-                refetchOnMount: globalQueryOptions.refetchOnMount,
-                refetchOnReconnect: globalQueryOptions.refetchOnReconnect,
-                retry: globalQueryOptions.retry
-            }
-        }
-    });
+export const ApiProvider: React.FC<ApiProviderProps> = ({children}) => {
+    // Create a new query client if none is provided
+    const queryClient = new QueryClient(defaultQueryOptions);
 
     return (
         <QueryClientProvider client={queryClient}>
             {children}
-            <ReactQueryDevtools/>
+            <ReactQueryDevtools initialIsOpen={false}/>
         </QueryClientProvider>
     );
 };
-
-export default ApiProvider; 

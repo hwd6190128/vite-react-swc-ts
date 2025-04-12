@@ -1,83 +1,58 @@
-import {useState} from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState, useMemo, lazy, Suspense } from 'react'
 import './App.css'
-import {ApiProvider} from './api/core/ApiProvider'
-import {ApiServiceDemo} from './components/ApiServiceDemo'
-import {useQueryClient} from "@tanstack/react-query";
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from './api/core/queryClient'
 
-function AppContent() {
-    const [count, setCount] = useState(0)
-    const [demoMode, setDemoMode] = useState<'api' | 'service' | 'none'>('none')
-    const queryClient = useQueryClient()
+// 使用懶加載
+const QueryHooksDemo = lazy(() => import('./components/QueryHooksDemo'))
+const HttpClientDemo = lazy(() => import('./components/HttpClientDemo'))
 
-    return (
-        <div className="App">
-            <div>
-                <a href="https://vite.dev" target="_blank">
-                    <img src={viteLogo} className="logo" alt="Vite logo"/>
-                </a>
-                <a href="https://react.dev" target="_blank">
-                    <img src={reactLogo} className="logo react" alt="React logo"/>
-                </a>
-            </div>
-            <h1>React API Library Demo</h1>
+// 定義類型
+type TabType = 'query-hooks' | 'http-client'
 
-            <div className="card">
-                <button onClick={() => setCount((count) => count + 1)}>
-                    count is {count}
-                </button>
-                <button
-                    onClick={() => void queryClient.invalidateQueries()}
-                    style={{marginLeft: '10px', background: '#2196f3'}}
-                >
-                    Refresh All Queries
-                </button>
-            </div>
+const App = () => {
+    const [activeTab, setActiveTab] = useState<TabType>('query-hooks')
 
-            <div className="demo-selector">
-                <button
-                    className={demoMode === 'api' ? 'active' : ''}
-                    onClick={() => setDemoMode('api')}
-                >
-                    API Hooks Demo
-                </button>
-                <button
-                    className={demoMode === 'service' ? 'active' : ''}
-                    onClick={() => setDemoMode('service')}
-                >
-                    Service API Demo
-                </button>
-                <button
-                    className={demoMode === 'none' ? 'active' : ''}
-                    onClick={() => setDemoMode('none')}
-                >
-                    Clear
-                </button>
-            </div>
-
-            <div className="demo-container">
-                {demoMode === 'service' && <ApiServiceDemo/>}
-                {demoMode === 'none' && (
-                    <div className="empty-state">
-                        <h2>Please Select a Demo Mode</h2>
-                        <p>Click one of the buttons above to view a demo.</p>
-                    </div>
-                )}
-            </div>
-
-            <p className="read-the-docs">
-                Unified API architecture using React Query and Axios
-            </p>
+    // 使用記憶化Tab按鈕以提高性能
+    const TabButtons = useMemo(() => (
+        <div className="tab-buttons">
+            <button
+                className={activeTab === 'query-hooks' ? 'active' : ''}
+                onClick={() => setActiveTab('query-hooks')}
+            >
+                QueryHooks Pattern
+            </button>
+            <button
+                className={activeTab === 'http-client' ? 'active' : ''}
+                onClick={() => setActiveTab('http-client')}
+            >
+                HttpClient Pattern
+            </button>
         </div>
-    )
-}
+    ), [activeTab])
 
-function App() {
     return (
-        <ApiProvider>
-            <AppContent/>
-        </ApiProvider>
+        <div className="app">
+            <header className="app-header">
+                <h1>React API Call Patterns</h1>
+                {TabButtons}
+            </header>
+            <main className="app-content">
+                <Suspense fallback={<div className="loading">Loading...</div>}>
+                    {activeTab === 'query-hooks' && (
+                        <QueryClientProvider client={queryClient}>
+                            <QueryHooksDemo />
+                        </QueryClientProvider>
+                    )}
+                    {activeTab === 'http-client' && (
+                        <HttpClientDemo />
+                    )}
+                </Suspense>
+            </main>
+            <footer className="app-footer">
+                <p>React API Call Patterns Comparison © {new Date().getFullYear()}</p>
+            </footer>
+        </div>
     )
 }
 

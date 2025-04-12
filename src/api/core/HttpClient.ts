@@ -4,12 +4,12 @@ import axios, {
     AxiosResponse,
     AxiosProgressEvent,
     RawAxiosRequestHeaders,
-    AxiosHeaders, HeadersDefaults
+    AxiosHeaders, HeadersDefaults, AxiosInstance
 } from 'axios';
-import {setupErrorInterceptor} from '../interceptors/ErrorHandler';
+import { setupErrorInterceptor } from '../interceptors/ErrorHandler';
 
 /**
- * HTTP methods enum
+ * HTTP method enum
  */
 export enum HttpMethod {
     GET = 'get',
@@ -20,13 +20,31 @@ export enum HttpMethod {
 }
 
 /**
- * Error handling options
+ * Error handling options interface
  */
 export interface ErrorHandlingOptions {
-    /** Whether to show a common error dialog on failure */
-    showCommonErrorDialog?: boolean;
-    /** How to handle errors: 'throw' (default), 'resolve', or 'ignore' */
-    propagateError?: 'throw' | 'resolve' | 'ignore';
+    /** Whether to show an error dialog for this request */
+    showErrorDialog?: boolean;
+    /** HTTP status codes to ignore */
+    ignoreErrors?: number[];
+    /** Custom error message to display */
+    customErrorMessage?: string;
+    /** Custom error handler function */
+    onError?: (error: AxiosError) => void;
+}
+
+/**
+ * Request options interface
+ */
+export interface RequestOptions {
+    /** Error handling options */
+    errorHandling?: ErrorHandlingOptions;
+    /** Abort signal for cancellation */
+    signal?: AbortSignal;
+    /** Additional headers for the request */
+    headers?: Record<string, string>;
+    /** Progress handler for file upload */
+    onUploadProgress?: (progressEvent: AxiosProgressEvent) => void;
 }
 
 /**
@@ -53,96 +71,97 @@ const DEFAULT_HTTP_OPTIONS: HttpClientOptions = {
         'Content-Type': 'application/json'
     },
     defaultErrorHandling: {
-        showCommonErrorDialog: true,
-        propagateError: 'throw'
+        showErrorDialog: true,
+        ignoreErrors: []
     }
 };
 
 /**
- * Additional request options
+ * HttpClient class for handling API requests
  */
-export interface RequestOptions {
-    /** Error handling options */
-    errorHandling?: ErrorHandlingOptions;
-    /** Abort signal for cancellation */
-    signal?: AbortSignal;
-    /** Additional headers for the request */
-    headers?: RawAxiosRequestHeaders | AxiosHeaders | Partial<HeadersDefaults>;
-}
+export class HttpClient {
+    private instance: AxiosInstance;
+    private defaultErrorHandling: ErrorHandlingOptions | undefined;
 
-/**
- * API response type
- */
-export interface ApiResponse<T> {
-    /** Response data */
-    data: T;
-    /** HTTP status code */
-    status: number;
-    /** Status text */
-    statusText: string;
-    /** Response headers */
-    headers: RawAxiosRequestHeaders | AxiosHeaders | Partial<HeadersDefaults>;
-}
+    /**
+     * Create a new HttpClient instance
+     * @param baseURL - Base URL for all requests
+     * @param defaultErrorHandling - Default error handling options
+     */
+    constructor(baseURL?: string, defaultErrorHandling?: ErrorHandlingOptions) {
+        // Ensure defaultErrorHandling is not undefined
+        const errorHandlingOptions: ErrorHandlingOptions = defaultErrorHandling || DEFAULT_HTTP_OPTIONS.defaultErrorHandling || {};
+        const mergedOptions: HttpClientOptions = {...DEFAULT_HTTP_OPTIONS, baseUrl: baseURL, defaultErrorHandling: errorHandlingOptions};
 
-/**
- * Create a new HTTP client instance
- */
-export const createHttpClient = (options: HttpClientOptions = DEFAULT_HTTP_OPTIONS) => {
-    const mergedOptions: HttpClientOptions = {...DEFAULT_HTTP_OPTIONS, ...options};
-    
-    // Create axios instance
-    const instance = axios.create({
-        timeout: mergedOptions.timeout,
-        baseURL: mergedOptions.baseUrl,
-        headers: mergedOptions.headers
-    });
+        // Create axios instance
+        this.instance = axios.create({
+            timeout: mergedOptions.timeout,
+            baseURL: mergedOptions.baseUrl,
+            headers: mergedOptions.headers
+        });
 
-    // Set up error interceptor
-    setupErrorInterceptor(instance);
+        // Set up error interceptor
+        setupErrorInterceptor(this.instance, errorHandlingOptions);
 
-    // Configuration methods
-    const setBaseUrl = (url: string) => {
-        instance.defaults.baseURL = url;
-    };
+        this.defaultErrorHandling = errorHandlingOptions;
+    }
 
-    const setTimeout = (timeout: number) => {
-        instance.defaults.timeout = timeout;
-    };
+    /**
+     * Set base URL for API requests
+     */
+    setBaseUrl(url: string): void {
+        this.instance.defaults.baseURL = url;
+    }
 
-    const setHeader = (name: string, value: string) => {
-        instance.defaults.headers.common[name] = value;
-    };
+    /**
+     * Set timeout for API requests
+     */
+    setTimeout(timeout: number): void {
+        this.instance.defaults.timeout = timeout;
+    }
 
-    const setWithCredentials = (value: boolean) => {
-        instance.defaults.withCredentials = value;
-    };
+    /**
+     * Set header for API requests
+     */
+    setHeader(name: string, value: string): void {
+        this.instance.defaults.headers.common[name] = value;
+    }
 
-    const setDefaultErrorHandling = (options: ErrorHandlingOptions) => {
-        mergedOptions.defaultErrorHandling = {
-            ...mergedOptions.defaultErrorHandling,
+    /**
+     * Set default error handling options
+     */
+    setDefaultErrorHandling(options: ErrorHandlingOptions): void {
+        this.defaultErrorHandling = {
+            ...this.defaultErrorHandling,
             ...options
         };
-    };
+    }
 
-    // Generic request method
-    const request = async <T, D = unknown>(
+    /**
+     * Generic request method
+     */
+    private async request<T, D = unknown>(
         method: HttpMethod,
         url: string,
         data?: D,
         options: RequestOptions = {}
-    ): Promise<AxiosResponse<T>> => {
+    ): Promise<AxiosResponse<T>> {
         try {
             const errorHandling = {
-                ...mergedOptions.defaultErrorHandling,
+                ...this.defaultErrorHandling,
                 ...options.errorHandling
             };
 
-            const { errorHandling: _, ...axiosOptions } = options;
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { errorHandling: _, ...restOptions } = options;
 
+            // Ensure type consistency when creating the configuration
             const config: AxiosRequestConfig = {
                 method,
                 url,
-                ...axiosOptions
+                headers: restOptions.headers,
+                signal: restOptions.signal,
+                onUploadProgress: restOptions.onUploadProgress
             };
 
             if (method === HttpMethod.GET && data) {
@@ -151,102 +170,98 @@ export const createHttpClient = (options: HttpClientOptions = DEFAULT_HTTP_OPTIO
                 config.data = data;
             }
 
+            // Add custom error handling options
             (config as AxiosRequestConfig & { errorHandling: ErrorHandlingOptions }).errorHandling = errorHandling;
 
-            return await instance.request<T>(config);
+            return await this.instance.request<T>(config);
         } catch (error) {
             if (axios.isCancel(error)) {
-                throw new Error('Request cancelled');
+                console.log('Request canceled:', error.message);
             }
-            if ((error as AxiosError).response) {
-                throw error;
-            }
-            throw new Error(`Request failed: ${(error as Error).message}`);
+            throw error;
         }
-    };
+    }
 
-    // HTTP methods
-    const get = async <T, D = Record<string, unknown>>(
+    /**
+     * Make GET request
+     */
+    async get<T, D = Record<string, unknown>>(
         url: string,
         params?: D,
         options?: RequestOptions
-    ) => {
-        return request<T, D>(HttpMethod.GET, url, params, options);
-    };
+    ): Promise<AxiosResponse<T>> {
+        return this.request<T, D>(HttpMethod.GET, url, params, options);
+    }
 
-    const post = async <T, D = unknown>(
+    /**
+     * Make POST request
+     */
+    async post<T, D = unknown>(
         url: string,
         data?: D,
         options?: RequestOptions
-    ) => {
-        return request<T, D>(HttpMethod.POST, url, data, options);
-    };
+    ): Promise<AxiosResponse<T>> {
+        return this.request<T, D>(HttpMethod.POST, url, data, options);
+    }
 
-    const put = async <T, D = unknown>(
+    /**
+     * Make PUT request
+     */
+    async put<T, D = unknown>(
         url: string,
         data?: D,
         options?: RequestOptions
-    ) => {
-        return request<T, D>(HttpMethod.PUT, url, data, options);
-    };
+    ): Promise<AxiosResponse<T>> {
+        return this.request<T, D>(HttpMethod.PUT, url, data, options);
+    }
 
-    const deleteRequest = async <T, D = unknown>(
+    /**
+     * Make DELETE request
+     */
+    async delete<T, D = unknown>(
         url: string,
         data?: D,
         options?: RequestOptions
-    ) => {
-        return request<T, D>(HttpMethod.DELETE, url, data, options);
-    };
+    ): Promise<AxiosResponse<T>> {
+        return this.request<T, D>(HttpMethod.DELETE, url, data, options);
+    }
 
-    const patch = async <T, D = unknown>(
+    /**
+     * Make PATCH request
+     */
+    async patch<T, D = unknown>(
         url: string,
         data?: D,
         options?: RequestOptions
-    ) => {
-        return request<T, D>(HttpMethod.PATCH, url, data, options);
-    };
+    ): Promise<AxiosResponse<T>> {
+        return this.request<T, D>(HttpMethod.PATCH, url, data, options);
+    }
 
-    const uploadFile = async <T>(
+    /**
+     * Upload file
+     */
+    async uploadFile<T>(
         url: string,
         file: File | FormData,
-        options: RequestOptions & {
-            onUploadProgress?: (progressEvent: AxiosProgressEvent) => void;
-            headers?: Record<string, string>;
-        } = {}
-    ) => {
+        options: RequestOptions = {}
+    ): Promise<AxiosResponse<T>> {
         const formData = file instanceof FormData ? file : new FormData();
         if (file instanceof File) {
             formData.append('file', file);
         }
 
-        return instance.post<T>(url, formData, {
+        return this.post<T>(url, formData as unknown as Record<string, unknown>, {
             ...options,
             headers: {
                 ...options.headers,
                 'Content-Type': 'multipart/form-data'
-            },
-            onUploadProgress: options.onUploadProgress
+            }
         });
-    };
+    }
+}
 
-    return {
-        instance,
-        setBaseUrl,
-        setTimeout,
-        setHeader,
-        setWithCredentials,
-        setDefaultErrorHandling,
-        get,
-        post,
-        put,
-        delete: deleteRequest,
-        patch,
-        uploadFile
-    };
-};
+// Create default HttpClient instance
+export const httpClient = new HttpClient();
 
-// Create default instance
-export const httpClient = createHttpClient();
-
-// 導出默認實例，同時允許創建其他實例
+// Export default instance
 export default httpClient;

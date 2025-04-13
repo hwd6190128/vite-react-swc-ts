@@ -47,6 +47,7 @@ describe('HttpClient', () => {
   describe('Constructor', () => {
     test('should create instance with default options', () => {
       const client = new HttpClient();
+      expect(client).toBeDefined();
       expect(axios.create).toHaveBeenCalledWith(
         expect.objectContaining({
           timeout: 30000,
@@ -70,6 +71,7 @@ describe('HttpClient', () => {
         ignoreErrors: [404]
       };
       const client = new HttpClient('https://api.example.com', customOptions);
+      expect(client).toBeDefined();
       expect(axios.create).toHaveBeenCalledWith(
         expect.objectContaining({
           timeout: 30000,

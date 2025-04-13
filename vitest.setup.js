@@ -1,8 +1,10 @@
 // This file contains setup code to run before tests
-import { vi, expect } from 'vitest';
-import { cleanup } from '@testing-library/react';
 
-// Mock global.fetch
+// Extend expect matchers
+import '@testing-library/jest-dom/vitest';
+import { vi, afterEach } from 'vitest';
+
+// Global mock for global.fetch
 global.fetch = vi.fn(() => 
   Promise.resolve({
     json: () => Promise.resolve({}),
@@ -12,13 +14,12 @@ global.fetch = vi.fn(() =>
   })
 );
 
-// Clean up mocks and DOM after each test
+// Clean up mocks
 afterEach(() => {
-  cleanup();
-  vi.resetAllMocks();
+  vi.clearAllMocks();
 });
 
-// Disable console warnings in tests
+// Disable test library console warnings
 vi.spyOn(console, 'error').mockImplementation(() => {});
 vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -29,8 +30,8 @@ Object.defineProperty(window, 'matchMedia', {
     matches: false,
     media: query,
     onchange: null,
-    addListener: vi.fn(), // backward compatibility
-    removeListener: vi.fn(), // backward compatibility
+    addListener: vi.fn(), // Backward compatibility
+    removeListener: vi.fn(), // Backward compatibility
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
@@ -38,12 +39,12 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock window.FormData
-class MockFormData {
-  private entries: Record<string, any> = {};
+global.FormData = class FormData {
+  constructor() {
+    this.entries = {};
+  }
   
-  append(key: string, value: any) {
+  append(key, value) {
     this.entries[key] = value;
   }
-}
-
-global.FormData = MockFormData as any; 
+}; 

@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'ax
 import { ErrorHandlingOptions } from '../core/HttpClient';
 
 /**
- * 默認錯誤處理選項
+ * Default error handling options
  */
 export const DEFAULT_ERROR_OPTIONS: ErrorHandlingOptions = {
   showErrorDialog: true,
@@ -10,16 +10,16 @@ export const DEFAULT_ERROR_OPTIONS: ErrorHandlingOptions = {
 };
 
 /**
- * 擴展的 Axios 請求配置，包含錯誤處理選項
+ * Extended Axios request configuration with error handling options
  */
 interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
   errorHandling?: ErrorHandlingOptions;
 }
 
 /**
- * 設置錯誤處理攔截器
- * @param axiosInstance - Axios 實例
- * @param defaultErrorHandling - 默認錯誤處理選項
+ * Setup error handling interceptor
+ * @param axiosInstance - Axios instance
+ * @param defaultErrorHandling - Default error handling options
  */
 export function setupErrorInterceptor(
   axiosInstance: AxiosInstance, 
@@ -28,33 +28,33 @@ export function setupErrorInterceptor(
   axiosInstance.interceptors.response.use(
     response => response,
     error => {
-      // 處理請求取消
+      // Handle request cancellation
       if (axios.isCancel(error)) {
         console.log('Request canceled:', error.message);
         return Promise.reject(error);
       }
 
-      // 從請求配置中獲取錯誤處理選項
+      // Get error handling options from request configuration
       const config = error.config as ExtendedAxiosRequestConfig;
       const errorHandling: ErrorHandlingOptions = config?.errorHandling || defaultErrorHandling;
 
-      // 根據選項處理錯誤
+      // Handle error based on options
       if (error.response) {
         const status = error.response.status;
         
-        // 如果狀態碼在忽略列表中，跳過處理
+        // Skip processing if the status code is in the ignore list
         if (errorHandling.ignoreErrors?.includes(status)) {
           return Promise.reject(error);
         }
         
-        // 如果提供了自定義錯誤處理函數，調用它
+        // If a custom error handler function is provided, call it
         if (errorHandling.onError) {
           errorHandling.onError(error);
         }
         
-        // 如果啟用了錯誤對話框，顯示錯誤
+        // If error dialog is enabled, display the error
         if (errorHandling.showErrorDialog) {
-          // 實現取決於您的 UI 框架
+          // Implementation depends on your UI framework
           console.error('API Error:', error.response.data);
         }
       }
@@ -65,14 +65,14 @@ export function setupErrorInterceptor(
 }
 
 /**
- * 顯示通用錯誤對話框
- * @param error - Axios 錯誤
+ * Show common error dialog
+ * @param error - Axios error
  */
 export function showCommonErrorDialog(error: AxiosError): void {
   const status = error.response?.status;
   let message = error.message;
   
-  // 如果可用，嘗試從響應數據中提取消息
+  // Try to extract message from response data if available
   if (error.response?.data) {
     if (typeof error.response.data === 'object') {
       const errorData = error.response.data as Record<string, unknown>;

@@ -1,21 +1,21 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { setupErrorInterceptor, showCommonErrorDialog, DEFAULT_ERROR_OPTIONS } from '../ErrorHandler';
+import { setupErrorInterceptor, showCommonErrorDialog  } from '../ErrorHandler';
 import { describe, test, expect, beforeEach, vi, afterEach } from 'vitest';
 import { ErrorHandlingOptions } from '../../core/HttpClient';
 
-// 模擬 axios
+// Mock axios
 vi.mock('axios');
 
 describe('ErrorHandler', () => {
   let mockAxiosInstance: AxiosInstance;
-  let consoleErrorSpy: jest.SpyInstance;
-  let alertSpy: jest.SpyInstance;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let alertSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    // 重置所有模擬
+    // Reset all mocks
     vi.clearAllMocks();
 
-    // 模擬 axios 實例
+    // Mock axios instance
     mockAxiosInstance = {
       interceptors: {
         response: {
@@ -24,10 +24,10 @@ describe('ErrorHandler', () => {
       }
     } as unknown as AxiosInstance;
 
-    // 模擬 console.error
+    // Mock console.error
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     
-    // 模擬 window.alert
+    // Mock window.alert
     globalThis.alert = vi.fn();
     alertSpy = vi.spyOn(globalThis, 'alert');
   });
@@ -38,12 +38,12 @@ describe('ErrorHandler', () => {
   });
 
   describe('setupErrorInterceptor', () => {
-    test('應該使用默認錯誤處理選項設置攔截器', () => {
+    test('should set up interceptor with default error handling options', () => {
       setupErrorInterceptor(mockAxiosInstance);
       expect(mockAxiosInstance.interceptors.response.use).toHaveBeenCalledTimes(1);
     });
 
-    test('應該使用自定義錯誤處理選項設置攔截器', () => {
+    test('should set up interceptor with custom error handling options', () => {
       const customOptions: ErrorHandlingOptions = {
         showErrorDialog: false,
         ignoreErrors: [404]
@@ -52,37 +52,39 @@ describe('ErrorHandler', () => {
       expect(mockAxiosInstance.interceptors.response.use).toHaveBeenCalledTimes(1);
     });
 
-    test('攔截器應該處理請求取消', async () => {
-      // 設置攔截器
+    test('interceptor should handle request cancellation', async () => {
+      // Set up interceptor
       setupErrorInterceptor(mockAxiosInstance);
 
-      // 獲取攔截器函數
-      const [, errorHandler] = mockAxiosInstance.interceptors.response.use.mock.calls[0];
+      // Get interceptor function
+      const useFunction = mockAxiosInstance.interceptors.response.use as ReturnType<typeof vi.fn>;
+      const [, errorHandler] = useFunction.mock.calls[0];
 
-      // 模擬 axios.isCancel 返回 true
+      // Mock axios.isCancel to return true
       vi.mocked(axios.isCancel).mockReturnValueOnce(true);
 
-      // 創建取消錯誤
+      // Create cancel error
       const cancelError = new Error('Request canceled') as AxiosError;
       
-      // 執行錯誤處理器
+      // Execute error handler
       await expect(errorHandler(cancelError)).rejects.toEqual(cancelError);
       
-      // 驗證 console.log 被調用
+      // Verify console.log was not called
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
-    test('攔截器應該處理 API 錯誤並顯示錯誤對話框', async () => {
-      // 設置攔截器
+    test('interceptor should handle API errors and show error dialog', async () => {
+      // Set up interceptor
       setupErrorInterceptor(mockAxiosInstance);
 
-      // 獲取攔截器函數
-      const [, errorHandler] = mockAxiosInstance.interceptors.response.use.mock.calls[0];
+      // Get interceptor function
+      const useFunction = mockAxiosInstance.interceptors.response.use as ReturnType<typeof vi.fn>;
+      const [, errorHandler] = useFunction.mock.calls[0];
 
-      // 模擬 axios.isCancel 返回 false
+      // Mock axios.isCancel to return false
       vi.mocked(axios.isCancel).mockReturnValueOnce(false);
 
-      // 創建 API 錯誤
+      // Create API error
       const apiError = {
         config: {
           errorHandling: {
@@ -95,27 +97,28 @@ describe('ErrorHandler', () => {
         }
       } as unknown as AxiosError;
       
-      // 執行錯誤處理器
+      // Execute error handler
       await expect(errorHandler(apiError)).rejects.toEqual(apiError);
       
-      // 驗證錯誤被記錄
+      // Verify error was logged
       expect(consoleErrorSpy).toHaveBeenCalledWith('API Error:', { message: 'Internal Server Error' });
     });
 
-    test('攔截器應該忽略指定的錯誤狀態碼', async () => {
-      // 設置攔截器，忽略 404 錯誤
+    test('interceptor should ignore specified error status codes', async () => {
+      // Set up interceptor, ignoring 404 errors
       setupErrorInterceptor(mockAxiosInstance, {
         showErrorDialog: true,
         ignoreErrors: [404]
       });
 
-      // 獲取攔截器函數
-      const [, errorHandler] = mockAxiosInstance.interceptors.response.use.mock.calls[0];
+      // Get interceptor function
+      const useFunction = mockAxiosInstance.interceptors.response.use as ReturnType<typeof vi.fn>;
+      const [, errorHandler] = useFunction.mock.calls[0];
 
-      // 模擬 axios.isCancel 返回 false
+      // Mock axios.isCancel to return false
       vi.mocked(axios.isCancel).mockReturnValueOnce(false);
 
-      // 創建 404 錯誤
+      // Create 404 error
       const notFoundError = {
         config: {},
         response: {
@@ -124,30 +127,31 @@ describe('ErrorHandler', () => {
         }
       } as unknown as AxiosError;
       
-      // 執行錯誤處理器
+      // Execute error handler
       await expect(errorHandler(notFoundError)).rejects.toEqual(notFoundError);
       
-      // 驗證 console.error 沒有被調用
+      // Verify console.error was not called
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
-    test('攔截器應該調用自定義錯誤處理函數', async () => {
-      // 創建自定義錯誤處理函數
+    test('interceptor should call custom error handler function', async () => {
+      // Create custom error handler function
       const onError = vi.fn();
       
-      // 設置攔截器，包含自定義錯誤處理
+      // Set up interceptor with custom error handling
       setupErrorInterceptor(mockAxiosInstance, {
         showErrorDialog: false,
         onError
       });
 
-      // 獲取攔截器函數
-      const [, errorHandler] = mockAxiosInstance.interceptors.response.use.mock.calls[0];
+      // Get interceptor function
+      const useFunction = mockAxiosInstance.interceptors.response.use as ReturnType<typeof vi.fn>;
+      const [, errorHandler] = useFunction.mock.calls[0];
 
-      // 模擬 axios.isCancel 返回 false
+      // Mock axios.isCancel to return false
       vi.mocked(axios.isCancel).mockReturnValueOnce(false);
 
-      // 創建錯誤
+      // Create error
       const apiError = {
         config: {},
         response: {
@@ -156,17 +160,17 @@ describe('ErrorHandler', () => {
         }
       } as unknown as AxiosError;
       
-      // 執行錯誤處理器
+      // Execute error handler
       await expect(errorHandler(apiError)).rejects.toEqual(apiError);
       
-      // 驗證自定義錯誤處理函數被調用
+      // Verify custom error handler function was called
       expect(onError).toHaveBeenCalledWith(apiError);
     });
   });
 
   describe('showCommonErrorDialog', () => {
-    test('應該顯示錯誤對話框', () => {
-      // 創建錯誤
+    test('should display error dialog', () => {
+      // Create error
       const error = {
         message: 'Network Error',
         response: {
@@ -175,21 +179,21 @@ describe('ErrorHandler', () => {
         }
       } as unknown as AxiosError;
       
-      // 調用函數
+      // Call function
       showCommonErrorDialog(error);
       
-      // 驗證錯誤被記錄
+      // Verify error was logged
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'HTTP Error 500: Internal Server Error',
         error
       );
       
-      // 驗證顯示警告
+      // Verify alert was shown
       expect(alertSpy).toHaveBeenCalledWith('Error 500: Internal Server Error');
     });
 
-    test('應該處理沒有響應數據的錯誤', () => {
-      // 創建沒有響應數據的錯誤
+    test('should handle errors without response data', () => {
+      // Create error without response data
       const error = {
         message: 'Network Error',
         response: {
@@ -197,35 +201,35 @@ describe('ErrorHandler', () => {
         }
       } as unknown as AxiosError;
       
-      // 調用函數
+      // Call function
       showCommonErrorDialog(error);
       
-      // 驗證錯誤被記錄
+      // Verify error was logged
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'HTTP Error 0: Network Error',
         error
       );
       
-      // 驗證顯示警告
+      // Verify alert was shown
       expect(alertSpy).toHaveBeenCalledWith('Error 0: Network Error');
     });
 
-    test('應該處理沒有響應的錯誤', () => {
-      // 創建沒有響應的錯誤
+    test('should handle errors without response', () => {
+      // Create error without response
       const error = {
         message: 'Network Error'
       } as unknown as AxiosError;
       
-      // 調用函數
+      // Call function
       showCommonErrorDialog(error);
       
-      // 驗證錯誤被記錄
+      // Verify error was logged
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'HTTP Error undefined: Network Error',
         error
       );
       
-      // 驗證顯示警告
+      // Verify alert was shown
       expect(alertSpy).toHaveBeenCalledWith('Error undefined: Network Error');
     });
   });

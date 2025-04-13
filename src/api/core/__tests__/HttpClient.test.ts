@@ -113,7 +113,7 @@ describe('HttpClient', () => {
       };
       client.setDefaultErrorHandling(errorHandling);
       
-      // 使用 spy 檢查私有屬性 (間接測試)
+      // Use spy to check private property (indirect testing)
       const mockResponse = { data: 'test' };
       mockAxiosInstance.request.mockResolvedValue(mockResponse);
       

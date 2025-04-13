@@ -43,7 +43,7 @@ export interface RequestOptions {
     signal?: AbortSignal;
     /** Additional headers for the request */
     headers?: Record<string, string>;
-    /** Progress handler for file upload */
+    /** Upload progress callback */
     onUploadProgress?: (progressEvent: AxiosProgressEvent) => void;
 }
 
@@ -80,7 +80,7 @@ const DEFAULT_HTTP_OPTIONS: HttpClientOptions = {
  * HttpClient class for handling API requests
  */
 export class HttpClient {
-    private instance: AxiosInstance;
+    private readonly instance: AxiosInstance;
     private defaultErrorHandling: ErrorHandlingOptions | undefined;
 
     /**
@@ -153,16 +153,16 @@ export class HttpClient {
             };
 
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { errorHandling: _, ...restOptions } = options;
+            const { errorHandling: _, onUploadProgress, ...restOptions } = options;
 
             // Ensure type consistency when creating the configuration
-            const config: AxiosRequestConfig = {
+            const config = {
                 method,
                 url,
                 headers: restOptions.headers,
                 signal: restOptions.signal,
-                onUploadProgress: restOptions.onUploadProgress
-            };
+                onUploadProgress: onUploadProgress
+            } as AxiosRequestConfig;
 
             if (method === HttpMethod.GET && data) {
                 config.params = data;
@@ -239,6 +239,9 @@ export class HttpClient {
 
     /**
      * Upload file
+     * @param url - The URL to upload to
+     * @param file - The file or FormData to upload
+     * @param options - Request options including onUploadProgress for tracking upload progress
      */
     async uploadFile<T>(
         url: string,
@@ -256,6 +259,7 @@ export class HttpClient {
                 ...options.headers,
                 'Content-Type': 'multipart/form-data'
             }
+            // onUploadProgress 會從 options 傳遞到 request 方法，然後到底層的 axios 請求
         });
     }
 }

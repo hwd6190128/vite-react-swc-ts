@@ -270,6 +270,100 @@ function QueryHooksDemo() {
 | Type Safety | ★★★★★ | ★★★ |
 | Suitable Scenarios | Large Applications | Small Applications/Specific Needs |
 
+## Request Cancellation with AbortSignal
+
+You can cancel in-flight requests using the AbortSignal API, which is supported by both HttpClient and TanStack Query patterns:
+
+```typescript
+// HttpClient Pattern Example
+function HttpClientCancellationDemo() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Create an AbortController
+    const controller = new AbortController();
+    const signal = controller.signal;
+    
+    async function fetchUsers() {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Pass the signal to the request options
+        const data = await httpClientServices.userService.getUsers({ limit: 5 }, { signal });
+        setUsers(data);
+      } catch (err) {
+        // Check if the request was aborted
+        if (axios.isCancel(err)) {
+          console.log('Request was cancelled:', err.message);
+        } else {
+          setError(err.message);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchUsers();
+    
+    // Cleanup: abort the request when component unmounts
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  // Render component...
+}
+
+// TanStack Query Pattern Example
+function QueryHooksCancellationDemo() {
+  // Create an AbortController
+  const abortControllerRef = useRef(new AbortController());
+  const signal = abortControllerRef.current.signal;
+  
+  const userService = useUserService();
+  
+  // Pass the signal through options
+  const { 
+    data: users, 
+    isLoading, 
+    error 
+  } = userService.useGetUsers(
+    { limit: 5 }, 
+    { 
+      signal, // Pass the AbortSignal
+      enabled: true 
+    }
+  );
+  
+  // Cancel the request on button click
+  const handleCancelRequest = () => {
+    abortControllerRef.current.abort();
+    // Optionally create a new controller for future requests
+    abortControllerRef.current = new AbortController();
+  };
+  
+  return (
+    <div>
+      {isLoading && <div>Loading...</div>}
+      {error && <div>Error: {error.message}</div>}
+      
+      <button onClick={handleCancelRequest}>Cancel Request</button>
+      
+      {users && (
+        <ul>
+          {users.map(user => (
+            <li key={user.id}>{user.name}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+
 ## Custom Base URL
 
 You can customize the base URL for each service:
@@ -304,3 +398,25 @@ export function createUserService(baseURL = '/api/users') {
 const userService = createUserService('https://api.example.com');
 const localUserService = createUserService('http://localhost:3000/api');
 ```
+
+### 使用完整 URL
+
+HttpClient 支援使用完整 URL 進行請求，即使已設定 baseURL：
+
+```typescript
+// 建立 HttpClient 實例時設定 baseURL
+const httpClient = new HttpClient('https://api.example.com');
+
+// 使用相對路徑 - 將自動添加 baseURL
+await httpClient.get('/users'); // 請求 https://api.example.com/users
+
+// 使用完整 URL - 將忽略 baseURL
+await httpClient.get('https://api.another-domain.com/users'); // 請求 https://api.another-domain.com/users
+
+// 使用 AbortSignal 取消請求
+const controller = new AbortController();
+await httpClient.get('/users', {}, { signal: controller.signal });
+controller.abort(); // 取消請求
+```
+
+這種彈性允許您在需要時輕鬆地向不同的 API 端點發送請求，無需創建多個 HttpClient 實例。

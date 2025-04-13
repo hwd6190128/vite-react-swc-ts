@@ -69,7 +69,7 @@ const QueryHooksDemo: React.FC = () => {
   const { 
     mutate: uploadFile,
     isLoading: isUploading
-  } = uploadService.useFileUpload({
+  } = uploadService.useUploadFile({
     onSuccess: () => {
       setUploadSuccess(true);
       setSelectedFile(null);

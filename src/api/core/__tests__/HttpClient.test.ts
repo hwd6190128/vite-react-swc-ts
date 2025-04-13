@@ -210,6 +210,24 @@ describe('HttpClient', () => {
         })
       );
     });
+
+    test('should support upload progress callback in POST request', async () => {
+      const client = new HttpClient();
+      const mockResponse = { data: 'test' };
+      mockAxiosInstance.request.mockResolvedValue(mockResponse);
+      const progressCallback = vi.fn();
+
+      const response = await client.post('/test', { data: 'value' }, { onUploadProgress: progressCallback });
+      expect(response).toBe(mockResponse);
+      expect(mockAxiosInstance.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'post',
+          url: '/test',
+          data: { data: 'value' },
+          onUploadProgress: progressCallback
+        })
+      );
+    });
   });
 
   describe('File upload', () => {
@@ -248,6 +266,30 @@ describe('HttpClient', () => {
           headers: expect.objectContaining({
             'Content-Type': 'multipart/form-data'
           })
+        })
+      );
+    });
+
+    test('should support upload progress callback', async () => {
+      const client = new HttpClient();
+      const mockFile = new File(['test'], 'test.txt');
+      const mockResponse = { data: 'test' };
+      mockAxiosInstance.request.mockResolvedValue(mockResponse);
+      const progressCallback = vi.fn();
+
+      const response = await client.uploadFile('/upload', mockFile, {
+        onUploadProgress: progressCallback
+      });
+
+      expect(response).toBe(mockResponse);
+      expect(mockAxiosInstance.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'post',
+          url: '/upload',
+          headers: expect.objectContaining({
+            'Content-Type': 'multipart/form-data'
+          }),
+          onUploadProgress: progressCallback
         })
       );
     });

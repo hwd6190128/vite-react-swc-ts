@@ -1,9 +1,11 @@
-import {lazy, Suspense, useMemo, useState} from 'react'
+import {lazy, Suspense, useMemo, useState, useEffect} from 'react'
 import './App.css'
 import {QueryClientProvider} from '@tanstack/react-query'
 import {queryClient} from './api/core/queryClient'
 import DialogManager from './components/dialog-manager/DialogManager'
 import {useDialogStore} from './stores/dialogStore'
+import httpClient from './api/core/HttpClient'
+import { DialogType } from './types/dialog'
 
 // 使用懶加載
 const QueryHooksDemo = lazy(() => import('./components/QueryHooksDemo'))
@@ -14,6 +16,11 @@ type TabType = 'query-hooks' | 'http-client'
 
 const App = () => {
     const [activeTab, setActiveTab] = useState<TabType>('query-hooks')
+
+    // App 啟動時設定 base url
+    useEffect(() => {
+        httpClient.setBaseUrl('https://jsonplaceholder.typicode.com');
+    }, []);
 
     // 使用記憶化Tab按鈕以提高性能
     const TabButtons = useMemo(() => (
@@ -33,6 +40,12 @@ const App = () => {
         </div>
     ), [activeTab])
 
+    // 模擬登入，設定 Authorization header
+    const handleLogin = () => {
+        httpClient.setHeader('Authorization', 'Bearer mock_token_123');
+        alert('已設定 Authorization header，之後所有 API 都會帶上');
+    };
+
     return (
         <div className="app">
             <header className="app-header">
@@ -41,20 +54,21 @@ const App = () => {
             </header>
             <main className="app-content">
                 <div style={{marginBottom: 16}}>
+                    <button onClick={handleLogin} style={{marginRight: 8}}>模擬登入（設定 Authorization header）</button>
                     <button
                         onClick={() => {
                             const {openDialog, setDialogLoading} = useDialogStore.getState();
                             openDialog(
-                                'dialogA',
+                                DialogType.DialogA,
                                 {message: '這是A的內容', count: 1},
                                 (data) => {
                                     console.log('DialogA submit callback:', data);
                                     alert('DialogA submit callback: ' + JSON.stringify(data));
                                 }
                             );
-                            setDialogLoading('dialogA', true);
+                            setDialogLoading(DialogType.DialogA, true);
                             setTimeout(() => {
-                                setDialogLoading('dialogA', false);
+                                setDialogLoading(DialogType.DialogA, false);
                             }, 3000);
                         }}
                     >
@@ -64,16 +78,16 @@ const App = () => {
                         onClick={() => {
                             const {openDialog, setDialogLoading} = useDialogStore.getState();
                             openDialog(
-                                'dialogB',
+                                DialogType.DialogB,
                                 {value: 999, extra: '這是B的額外內容'},
                                 (data) => {
                                     console.log('DialogB submit callback:', data);
                                     alert('DialogB submit callback: ' + JSON.stringify(data));
                                 }
                             );
-                            setDialogLoading('dialogB', true);
+                            setDialogLoading(DialogType.DialogB, true);
                             setTimeout(() => {
-                                setDialogLoading('dialogB', false);
+                                setDialogLoading(DialogType.DialogB, false);
                             }, 3000);
                         }}
                     >

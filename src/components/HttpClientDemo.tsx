@@ -1,6 +1,8 @@
 import React, { useState, useEffect, FormEvent, ChangeEvent, useCallback } from 'react';
 import { User, Post, Comment } from '../api/types/models';
 import httpClientServices from "../api/services/httpClientServices.ts";
+import { useUserService } from '../api/services/UserService';
+import httpClient from '../api/core/HttpClient';
 
 /**
  * HttpClient Pattern Demo Component
@@ -42,6 +44,12 @@ const HttpClientDemo: React.FC = () => {
   
   // Service instances
   const { userService, postService, commentService, uploadService } = httpClientServices;
+  
+  // 用 useUserService 取得 user list，會自動帶 baseurl & header
+  const userServiceByHook = useUserService(httpClient);
+  const [usersByHook, setUsersByHook] = useState<any[]>([]);
+  const [loadingUsersByHook, setLoadingUsersByHook] = useState(false);
+  const [errorUsersByHook, setErrorUsersByHook] = useState<string | null>(null);
   
   // Load users data
   const fetchUsers = useCallback(async () => {
@@ -226,6 +234,20 @@ const HttpClientDemo: React.FC = () => {
     }
   };
 
+  // 按鈕點擊時才呼叫 getUsers
+  const handleFetchUsersByHook = async () => {
+    setLoadingUsersByHook(true);
+    setErrorUsersByHook(null);
+    try {
+      const data = await userServiceByHook.getUsers();
+      setUsersByHook(data);
+    } catch (err: any) {
+      setErrorUsersByHook(err.message);
+    } finally {
+      setLoadingUsersByHook(false);
+    }
+  };
+
   return (
     <div className="http-client-demo">
       <div className="pattern-explanation">
@@ -337,6 +359,19 @@ const HttpClientDemo: React.FC = () => {
           </form>
         </div>
       </div>
+
+      <section style={{margin: '24px 0', padding: 12, border: '1px solid #eee', borderRadius: 8}}>
+        <h3>用 useUserService + httpClient (帶 baseurl & header) 取得 User List</h3>
+        <button onClick={handleFetchUsersByHook} disabled={loadingUsersByHook} style={{marginBottom: 8}}>
+          {loadingUsersByHook ? 'Loading...' : '取得 User List'}
+        </button>
+        {errorUsersByHook && <div style={{color: 'red'}}>Error: {errorUsersByHook}</div>}
+        <ul>
+          {usersByHook.map(user => (
+            <li key={user.id}>{user.name} (id: {user.id})</li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 };

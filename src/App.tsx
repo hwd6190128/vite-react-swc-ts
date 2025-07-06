@@ -6,6 +6,7 @@ import DialogManager from './components/dialog-manager/DialogManager'
 import {useDialogStore} from './stores/dialogStore'
 import httpClient from './api/core/HttpClient'
 import { DialogType } from './types/dialog'
+import { registerKeycloakRefreshHandler } from './keycloakUtils'
 
 // 使用懶加載
 const QueryHooksDemo = lazy(() => import('./components/QueryHooksDemo'))
@@ -17,9 +18,10 @@ type TabType = 'query-hooks' | 'http-client'
 const App = () => {
     const [activeTab, setActiveTab] = useState<TabType>('query-hooks')
 
-    // App 啟動時設定 base url
+    // App 啟動時設定 base url 並註冊 keycloak refresh handler
     useEffect(() => {
         httpClient.setBaseUrl('https://jsonplaceholder.typicode.com');
+        registerKeycloakRefreshHandler();
     }, []);
 
     // 使用記憶化Tab按鈕以提高性能

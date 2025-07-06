@@ -7,6 +7,7 @@ import axios, {
     AxiosHeaders, HeadersDefaults, AxiosInstance
 } from 'axios';
 import { setupErrorInterceptor } from '../interceptors/ErrorHandler';
+import { setup401Interceptor, setRefreshTokenHandler } from '../interceptors/Refresh401Interceptor';
 
 /**
  * HTTP method enum
@@ -102,6 +103,7 @@ export class HttpClient {
 
         // Set up error interceptor
         setupErrorInterceptor(this.instance, errorHandlingOptions);
+        setup401Interceptor(this.instance);
 
         this.defaultErrorHandling = errorHandlingOptions;
     }
@@ -269,3 +271,4 @@ export const httpClient = new HttpClient();
 
 // Export default instance
 export default httpClient;
+export { setRefreshTokenHandler };

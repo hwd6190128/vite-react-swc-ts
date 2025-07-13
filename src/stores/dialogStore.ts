@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { DialogsState, DialogType, DialogDataMap } from '../types/dialog';
+import { DialogsState, DialogType, DialogDataMap, DialogState } from '../types/dialog';
 
 interface DialogStore {
   dialogs: DialogsState;
@@ -20,19 +20,11 @@ export const useDialogStore = create<DialogStore>()(
     dialogs: initialDialogsState,
     openDialog: (type, data, onSubmit) => {
       set((state) => {
-        if (type === DialogType.DialogA) {
-          state.dialogs[DialogType.DialogA] = {
-            isOpen: true,
-            data: data as DialogDataMap[DialogType.DialogA],
-            onSubmit: onSubmit as ((data: DialogDataMap[DialogType.DialogA]) => void) | undefined,
-          };
-        } else if (type === DialogType.DialogB) {
-          state.dialogs[DialogType.DialogB] = {
-            isOpen: true,
-            data: data as DialogDataMap[DialogType.DialogB],
-            onSubmit: onSubmit as ((data: DialogDataMap[DialogType.DialogB]) => void) | undefined,
-          };
-        }
+        (state.dialogs[type] as DialogState<DialogDataMap[typeof type]>) = {
+          isOpen: true,
+          data,
+          onSubmit,
+        };
       });
     },
     closeDialog: (type) => {

@@ -27,17 +27,34 @@ describe('useDialogStore', () => {
 
   it('should open a dialog with data', () => {
     act(() => {
-      useDialogStore.getState().openDialog(DialogType.DialogA, { message: 'Hello', count: 1 });
+      useDialogStore.getState().openDialog(DialogType.DialogA, {
+        isOpen: true,
+        abTypeName: 'A群組',
+        sourceName: '來源A',
+        sourceID: 'A001',
+        isLoading: false,
+        onClose: () => {},
+        onCreate: () => {},
+      });
     });
-
     const state = useDialogStore.getState().dialogs[DialogType.DialogA];
     expect(state.isOpen).toBe(true);
-    expect(state.data).toEqual({ message: 'Hello', count: 1 });
+    expect(state.abTypeName).toBe('A群組');
+    expect(state.sourceName).toBe('來源A');
+    expect(state.sourceID).toBe('A001');
   });
 
   it('should close a dialog', () => {
     act(() => {
-      useDialogStore.getState().openDialog(DialogType.DialogA, { message: 'Hello', count: 1 });
+      useDialogStore.getState().openDialog(DialogType.DialogA, {
+        isOpen: true,
+        abTypeName: 'A群組',
+        sourceName: '來源A',
+        sourceID: 'A001',
+        isLoading: false,
+        onClose: () => {},
+        onCreate: () => {},
+      });
       useDialogStore.getState().closeDialog(DialogType.DialogA);
     });
 
@@ -47,7 +64,15 @@ describe('useDialogStore', () => {
 
   it('should set dialog loading state', () => {
     act(() => {
-      useDialogStore.getState().openDialog(DialogType.DialogA, { message: 'Hello', count: 1 });
+      useDialogStore.getState().openDialog(DialogType.DialogA, {
+        isOpen: true,
+        abTypeName: 'A群組',
+        sourceName: '來源A',
+        sourceID: 'A001',
+        isLoading: false,
+        onClose: () => {},
+        onCreate: () => {},
+      });
       useDialogStore.getState().setDialogLoading(DialogType.DialogA, true);
     });
 

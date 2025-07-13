@@ -16,7 +16,15 @@ describe('DialogManager', () => {
   it('should render DialogA and handle open/close', async () => {
     render(<DialogManager />);
     act(() => {
-      useDialogStore.getState().openDialog(DialogType.DialogA, { message: 'TestA', count: 1 });
+      useDialogStore.getState().openDialog(DialogType.DialogA, {
+        isOpen: true,
+        abTypeName: 'A群組',
+        sourceName: '來源A',
+        sourceID: 'A001',
+        isLoading: false,
+        onClose: () => {},
+        onCreate: () => {},
+      });
     });
     expect(screen.getByText('對話框 A')).toBeInTheDocument();
     expect(screen.getByText('訊息：TestA')).toBeInTheDocument();

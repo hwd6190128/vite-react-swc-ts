@@ -1,42 +1,52 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { DialogsState, DialogType, DialogDataMap, DialogState } from '../types/dialog';
+import { DialogsState, DialogType } from '../types/dialog';
 
 interface DialogStore {
   dialogs: DialogsState;
-  openDialog: <T extends DialogType>(type: T, data?: DialogDataMap[T], onSubmit?: (data: DialogDataMap[T]) => void) => void;
+  openDialog: <T extends DialogType>(type: T, data: DialogsState[T]) => void;
   closeDialog: (type: DialogType) => void;
-  submitDialog: <T extends DialogType>(type: T, data: DialogDataMap[T]) => void;
   setDialogLoading: (type: DialogType, isLoading: boolean) => void;
 }
 
 export const initialDialogsState: DialogsState = {
-  [DialogType.DialogA]: { isOpen: false },
-  [DialogType.DialogB]: { isOpen: false },
+  dialogA: {
+    isOpen: false,
+    abTypeName: '',
+    sourceName: '',
+    sourceID: '',
+    isLoading: false,
+    onClose: () => {},
+    onCreate: () => {},
+  },
+  dialogB: {
+    isOpen: false,
+    abTypeName: '',
+    sourceName: '',
+    isLoading: false,
+    onClose: () => {},
+    onCreate: () => {},
+  },
+  dialogC: {
+    isOpen: false,
+    abTypeName: '',
+    isLoading: false,
+    onClose: () => {},
+    onDelete: () => {},
+  },
 };
 
 export const useDialogStore = create<DialogStore>()(
   immer((set) => ({
     dialogs: initialDialogsState,
-    openDialog: (type, data, onSubmit) => {
+    openDialog: (type, data) => {
       set((state) => {
-        (state.dialogs[type] as DialogState<DialogDataMap[typeof type]>) = {
-          isOpen: true,
-          data,
-          onSubmit,
-        };
+        state.dialogs[type] = { ...data };
       });
     },
     closeDialog: (type) => {
       set((state) => {
-        state.dialogs[type] = { isOpen: false };
-      });
-    },
-    submitDialog: (type, data) => {
-      set((state) => {
-        state.dialogs[type].onSubmit?.(data);
-        state.dialogs[type].isOpen = false;
-        state.dialogs[type].isLoading = false;
+        state.dialogs[type] = { ...initialDialogsState[type] };
       });
     },
     setDialogLoading: (type, isLoading) => {
@@ -44,5 +54,5 @@ export const useDialogStore = create<DialogStore>()(
         state.dialogs[type].isLoading = isLoading;
       });
     },
-  })),
+  }))
 ); 

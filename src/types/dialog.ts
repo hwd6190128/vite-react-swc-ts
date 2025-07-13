@@ -16,6 +16,7 @@ export interface DialogBData {
   value: number;
   extra: string;
 }
+
 export interface DialogCData {
   abTypeName: string;
 }
@@ -28,12 +29,11 @@ export type DialogDataMap = {
 };
 
 // Dialog 共用 props
-export interface BaseDialogProps<T> {
+export interface BaseDialogProps {
   isOpen: boolean;
-  data?: T;
-  isLoading?: boolean;
   onClose: () => void;
-  onSubmit: () => void;
+  abTypeName: string;
+  isLoading?: boolean;
 }
 
 // Dialog 狀態型別
@@ -45,9 +45,23 @@ export interface DialogState<T = unknown> {
   onClose?: () => void;
 }
 
-// 所有 Dialog 狀態
+export interface DialogAProps extends BaseDialogProps {
+  sourceName: string;
+  sourceID: string;
+  onCreate: (groupName: string) => void;
+}
+export interface DialogBProps extends BaseDialogProps {
+  sourceName: string;
+  onCreate: (groupName: string) => void;
+}
+export interface DialogCProps extends BaseDialogProps {
+  onDelete: (isDelete: boolean) => void;
+}
+
 export type DialogsState = {
-  [K in DialogType]: DialogState<DialogDataMap[K]>;
+  'dialogA': DialogAProps;
+  'dialogB': DialogBProps;
+  'dialogC': DialogCProps;
 };
 
 export interface DialogProps<T = unknown> {

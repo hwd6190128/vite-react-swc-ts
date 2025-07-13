@@ -59,54 +59,54 @@ const App = () => {
                     <button onClick={handleLogin} style={{marginRight: 8}}>模擬登入（設定 Authorization header）</button>
                     <button
                         onClick={() => {
-                            const {openDialog, setDialogLoading} = useDialogStore.getState();
+                            const { openDialog } = useDialogStore.getState();
                             openDialog(
                                 DialogType.DialogA,
-                                {message: '這是A的內容', count: 1},
-                                (data) => {
-                                    console.log('DialogA submit callback:', data);
-                                    alert('DialogA submit callback: ' + JSON.stringify(data));
-                                }
+                                {
+                                    isOpen: true,
+                                    onClose: () => useDialogStore.getState().closeDialog(DialogType.DialogA),
+                                    onCreate: (groupName: string) => alert('建立A: ' + groupName),
+                                    abTypeName: 'A群組',
+                                    sourceName: '來源A',
+                                    sourceID: 'A001',
+                                    isLoading: false,
+                                } as import('./types/dialog').DialogAProps
                             );
-                            setDialogLoading(DialogType.DialogA, true);
-                            setTimeout(() => {
-                                setDialogLoading(DialogType.DialogA, false);
-                            }, 3000);
                         }}
                     >
                         開啟 DialogA
                     </button>
                     <button
                         onClick={() => {
-                            const {openDialog, setDialogLoading} = useDialogStore.getState();
+                            const { openDialog } = useDialogStore.getState();
                             openDialog(
                                 DialogType.DialogB,
-                                {value: 999, extra: '這是B的額外內容'},
-                                (data) => {
-                                    console.log('DialogB submit callback:', data);
-                                    alert('DialogB submit callback: ' + JSON.stringify(data));
-                                }
+                                {
+                                    isOpen: true,
+                                    onClose: () => useDialogStore.getState().closeDialog(DialogType.DialogB),
+                                    onCreate: (groupName: string) => alert('建立B: ' + groupName),
+                                    abTypeName: 'B群組',
+                                    sourceName: '來源B',
+                                    isLoading: false,
+                                } as import('./types/dialog').DialogBProps
                             );
-                            setDialogLoading(DialogType.DialogB, true);
-                            setTimeout(() => {
-                                setDialogLoading(DialogType.DialogB, false);
-                            }, 3000);
                         }}
                     >
                         開啟 DialogB
                     </button>
                     <button
                         onClick={() => {
-                            const { openDialog, setDialogLoading } = useDialogStore.getState();
+                            const { openDialog } = useDialogStore.getState();
                             openDialog(
                                 DialogType.DialogC,
-                                { abTypeName: '這是C的群組名稱' },
-                                undefined
+                                {
+                                    isOpen: true,
+                                    onClose: () => useDialogStore.getState().closeDialog(DialogType.DialogC),
+                                    onCreate: (groupName: string) => alert('建立C: ' + groupName),
+                                    abTypeName: 'C群組',
+                                    isLoading: false,
+                                } as import('./types/dialog').DialogCProps
                             );
-                            setDialogLoading(DialogType.DialogC, true);
-                            setTimeout(() => {
-                                setDialogLoading(DialogType.DialogC, false);
-                            }, 3000);
                         }}
                     >
                         開啟 DialogC

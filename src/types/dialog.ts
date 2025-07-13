@@ -2,6 +2,7 @@
 export const DialogType = {
   DialogA: 'dialogA',
   DialogB: 'dialogB',
+  DialogC: 'dialogC', // 新增
 } as const;
 
 export type DialogType = typeof DialogType[keyof typeof DialogType];
@@ -15,11 +16,15 @@ export interface DialogBData {
   value: number;
   extra: string;
 }
+export interface DialogCData {
+  abTypeName: string;
+}
 
 // Dialog 資料型別對應表
 export type DialogDataMap = {
   [DialogType.DialogA]: DialogAData;
   [DialogType.DialogB]: DialogBData;
+  [DialogType.DialogC]: DialogCData; // 新增
 };
 
 // Dialog 共用 props

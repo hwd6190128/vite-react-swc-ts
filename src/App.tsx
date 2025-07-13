@@ -95,6 +95,22 @@ const App = () => {
                     >
                         開啟 DialogB
                     </button>
+                    <button
+                        onClick={() => {
+                            const { openDialog, setDialogLoading } = useDialogStore.getState();
+                            openDialog(
+                                DialogType.DialogC,
+                                { abTypeName: '這是C的群組名稱' },
+                                undefined
+                            );
+                            setDialogLoading(DialogType.DialogC, true);
+                            setTimeout(() => {
+                                setDialogLoading(DialogType.DialogC, false);
+                            }, 3000);
+                        }}
+                    >
+                        開啟 DialogC
+                    </button>
                 </div>
                 <Suspense fallback={<div className="loading">Loading...</div>}>
                     {activeTab === 'query-hooks' && (

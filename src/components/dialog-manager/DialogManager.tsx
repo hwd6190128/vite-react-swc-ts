@@ -48,28 +48,28 @@ const DialogB: React.FC<BaseDialogProps<unknown>> = React.memo((props) => {
 });
 
 type DialogComponentMap = {
-  [K in DialogType]: React.FC<BaseDialogProps<unknown>>;
+  [K in keyof typeof DialogType]: React.FC<BaseDialogProps<unknown>>;
 };
 
 const DialogManager: React.FC = React.memo(() => {
   const { dialogs, closeDialog } = useDialogStore();
 
   const dialogComponentMap: DialogComponentMap = {
-    [DialogType.DialogA]: DialogA,
-    [DialogType.DialogB]: DialogB,
+    DialogA: DialogA,
+    DialogB: DialogB,
   };
 
-  function renderDialog(type: DialogType) {
-    const DialogComponent = dialogComponentMap[type];
-    const dialogState = dialogs[type];
-
+  function renderDialog(typeKey: keyof typeof DialogType) {
+    const DialogComponent = dialogComponentMap[typeKey];
+    const dialogType = DialogType[typeKey];
+    const dialogState = dialogs[dialogType];
     return (
       <DialogComponent
-        key={type}
+        key={dialogType}
         isOpen={dialogState.isOpen}
         data={dialogState.data as unknown}
         isLoading={dialogState.isLoading}
-        onClose={() => closeDialog(type)}
+        onClose={() => closeDialog(dialogType)}
         onSubmit={() => {
           // 這裡 onSubmit 可根據 type 做簡單分派，或直接傳空函式
         }}
@@ -79,7 +79,7 @@ const DialogManager: React.FC = React.memo(() => {
 
   return (
     <>
-      {(Object.keys(dialogComponentMap) as DialogType[]).map(type => renderDialog(type))}
+      {(Object.keys(dialogComponentMap) as (keyof typeof DialogType)[]).map(typeKey => renderDialog(typeKey))}
     </>
   );
 });

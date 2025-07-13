@@ -1,8 +1,10 @@
-// DialogType Enum
-export enum DialogType {
-  DialogA = 'dialogA',
-  DialogB = 'dialogB',
-}
+// DialogType as const object
+export const DialogType = {
+  DialogA: 'dialogA',
+  DialogB: 'dialogB',
+} as const;
+
+export type DialogType = typeof DialogType[keyof typeof DialogType];
 
 // 各 Dialog 專屬資料型別
 export interface DialogAData {

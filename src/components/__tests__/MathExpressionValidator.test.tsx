@@ -199,56 +199,56 @@ describe('validateMathExpression', () => {
   });
 
   describe('Known expression validation (List B)', () => {
-    it('should validate valid ABS function', () => {
-      const result = validateMathExpression('ABS(x)');
+    it('should validate valid Abs function', () => {
+      const result = validateMathExpression('Abs(x)');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should validate valid POW function', () => {
-      const result = validateMathExpression('POW(x,y)');
+    it('should validate valid Hypot function', () => {
+      const result = validateMathExpression('Hypot(x,y)');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should validate valid SQRT function', () => {
-      const result = validateMathExpression('SQRT(16)');
+    it('should validate valid Sqrt function', () => {
+      const result = validateMathExpression('Sqrt(16)');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should validate valid LOG function', () => {
-      const result = validateMathExpression('LOG(10)');
+    it('should validate valid Sqr function', () => {
+      const result = validateMathExpression('Sqr(10)');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should validate valid SIN function', () => {
-      const result = validateMathExpression('SIN(3.14)');
+    it('should validate valid Max function', () => {
+      const result = validateMathExpression('Max(3,4)');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should validate valid COS function', () => {
-      const result = validateMathExpression('COS(3.14)');
+    it('should validate valid Min function', () => {
+      const result = validateMathExpression('Min(3,45)');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should validate valid TAN function', () => {
-      const result = validateMathExpression('TAN(3.14)');
+    it('should validate valid Power function', () => {
+      const result = validateMathExpression('Power(1,2)');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should validate valid MAX_FUNC function', () => {
-      const result = validateMathExpression('MAX_FUNC(1,2,3)');
+    it('should validate valid Round function', () => {
+      const result = validateMathExpression('Round(1)');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should validate valid MIN_FUNC function', () => {
-      const result = validateMathExpression('MIN_FUNC(1,2,3)');
+    it('should validate valid RoundTo function', () => {
+      const result = validateMathExpression('RoundTo(1,2)');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
@@ -260,26 +260,26 @@ describe('validateMathExpression', () => {
     });
 
     it('should validate function parameter count', () => {
-      const result = validateMathExpression('ABS()');
+      const result = validateMathExpression('Abs()');
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('ABS() insufficient parameters: requires at least 1, provided 0');
+      expect(result.errors).toContain('Abs() insufficient parameters: requires at least 1, provided 0');
     });
 
     it('should validate function parameter count upper limit', () => {
-      const result = validateMathExpression('POW(1,2,3)');
+      const result = validateMathExpression('Power(1,2,3)');
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('POW() too many parameters: maximum 2, provided 3');
+      expect(result.errors).toContain('Power() too many parameters: maximum 2, provided 3');
     });
 
     it('should validate nested functions', () => {
-      const result = validateMathExpression('ABS(POW(2,3))');
+      const result = validateMathExpression('Abs(Power(2,3))');
       console.log('ABS(POW(2,3)) result:', result);
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
     it('should validate complex function combinations', () => {
-      const result = validateMathExpression('MAX_FUNC(ABS(-5), POW(2,3), SQRT(16))');
+      const result = validateMathExpression('Max(Abs(-5), Power(2,3), Sqrt(16))');
       console.log('MAX_FUNC(ABS(-5), POW(2,3), SQRT(16)) result:', result);
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
@@ -288,7 +288,7 @@ describe('validateMathExpression', () => {
 
   describe('Mixed expression validation', () => {
     it('should validate complex expressions containing all elements', () => {
-      const result = validateMathExpression('{SUM} + ABS(-5) * POW(2,3) / {AVERAGE}');
+      const result = validateMathExpression('{SUM} + Abs(-5) * Power(2,3) / {AVERAGE}');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
@@ -306,7 +306,7 @@ describe('validateMathExpression', () => {
     });
 
     it('should validate function parameters with commas', () => {
-      const result = validateMathExpression('MAX_FUNC(1, 2, 3)');
+      const result = validateMathExpression('Max(1, 2)');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
@@ -338,7 +338,7 @@ describe('validateMathExpression', () => {
     });
 
     it('should handle single function calls', () => {
-      const result = validateMathExpression('ABS(5)');
+      const result = validateMathExpression('Abs(5)');
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });

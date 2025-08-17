@@ -26,15 +26,15 @@ const CUSTOM_EXPRESSIONS: CustomExpressionSet = new Set([
 ] as const);
 
 const KNOWN_FUNCTIONS: PredefinedFunctionMap = new Map([
-  ['ABS', { minArgs: 1, maxArgs: 1 }],
-  ['POW', { minArgs: 2, maxArgs: 2 }],
-  ['SQRT', { minArgs: 1, maxArgs: 1 }],
-  ['LOG', { minArgs: 1, maxArgs: 1 }],
-  ['SIN', { minArgs: 1, maxArgs: 1 }],
-  ['COS', { minArgs: 1, maxArgs: 1 }],
-  ['TAN', { minArgs: 1, maxArgs: 1 }],
-  ['MAX_FUNC', { minArgs: 2, maxArgs: Infinity }],
-  ['MIN_FUNC', { minArgs: 2, maxArgs: Infinity }]
+  ['Abs', { minArgs: 1, maxArgs: 1 }],
+  ['Hypot', { minArgs: 2, maxArgs: 2 }],
+  ['Max', { minArgs: 2, maxArgs: Infinity }],
+  ['Min', { minArgs: 2, maxArgs: Infinity }],
+  ['Power', { minArgs: 2, maxArgs: 2 }],
+  ['Round', { minArgs: 1, maxArgs: 1 }],
+  ['RoundTo', { minArgs: 2, maxArgs: 2 }],
+  ['Sqr', { minArgs: 1, maxArgs: 1 }],
+  ['Sqrt', { minArgs: 1, maxArgs: 1 }]
 ] as const);
 
 // ==================== Core Utility Functions ====================

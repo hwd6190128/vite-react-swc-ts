@@ -348,6 +348,24 @@ describe('validateMathExpression', () => {
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
+
+    it('should reject standalone invalid text like "oidx"', () => {
+      const result = validateMathExpression('oidx');
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Invalid mathematical expression: "oidx" is not a recognized function, custom expression, or valid mathematical syntax');
+    });
+
+    it('should reject other standalone invalid text', () => {
+      const result = validateMathExpression('invalid_text');
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Invalid mathematical expression: "invalid_text" is not a recognized function, custom expression, or valid mathematical syntax');
+    });
+
+    it('should reject mixed invalid expressions', () => {
+      const result = validateMathExpression('1 + oidx + 3');
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('Invalid mathematical expression: "oidx" is not a recognized function, custom expression, or valid mathematical syntax');
+    });
   });
 
   describe('Custom parameter testing', () => {
